@@ -1,0 +1,135 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Mapa de Rutas - Ruber{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    #map {
+        height: 600px;
+        width: 100%;
+        border-radius: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-5">
+    <h1 class="text-center mb-4">Mapa de Rutas Turísticas</h1>
+    
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-filter"></i> Opciones</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Calcular Ruta Óptima</h6>
+                    <form id="rutaForm">
+                        <div class="mb-3">
+                            <label class="form-label">Origen:</label>
+                            <select class="form-select" id="origen">
+                                <option value="">Seleccionar...</option>
+                                {% for destino in destinos %}
+                                <option value="{{ destino.id }}">{{ destino.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Destino:</label>
+                            <select class="form-select" id="destino">
+                                <option value="">Seleccionar...</option>
+                                {% for destino in destinos %}
+                                <option value="{{ destino.id }}">{{ destino.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-route"></i> Calcular Ruta
+                        </button>
+                    </form>
+                    
+                    <hr>
+                    
+                    <div id="resultadoRuta" class="alert alert-info d-none">
+                        <h6>Resultado:</h6>
+                        <p id="rutaInfo" class="mb-0"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-9">
+            <div class="card shadow">
+                <div class="card-body p-0">
+                    <div id="map"></div>
+                </div>
+            </div>
+            
+            <div class="alert alert-warning mt-3">
+                <i class="fas fa-info-circle"></i> 
+                <strong>Nota:</strong> El mapa usa Leaflet.js. Los datos se cargan desde la base de datos.
+                El algoritmo de Dijkstra está en desarrollo.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    // Inicializar mapa
+    const map = L.map('map').setView([-12.0464, -77.0428], 13); // Lima, Perú
+    
+    // Capa de mapa
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    
+    // Cargar destinos
+    const destinos = { { destinos_json|safe } };
+    const rutas = { { rutas_json|safe } };
+    
+    // Agregar marcadores
+    const markers = {};
+    destinos.forEach(destino => {
+        const marker = L.marker([destino.latitud, destino.longitud])
+            .bindPopup(`<strong>${destino.nombre}</strong>`)
+            .addTo(map);
+        markers[destino.id] = marker;
+    });
+    
+    // Dibujar rutas
+    rutas.forEach(ruta => {
+        const origen = destinos.find(d => d.id === ruta.origen_id);
+        const destino = destinos.find(d => d.id === ruta.destino_id);
+        
+        if (origen && destino) {
+            L.polyline([
+                [origen.latitud, origen.longitud],
+                [destino.latitud, destino.longitud]
+            ], {
+                color: 'blue',
+                weight: 2,
+                opacity: 0.6
+            }).bindPopup(`${ruta.distancia_km} km - ${ruta.tiempo_minutos} min`)
+            .addTo(map);
+        }
+    });
+    
+    // TODO: Implementar cálculo de ruta con Dijkstra
+    document.getElementById('rutaForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const origen = document.getElementById('origen').value;
+        const destino = document.getElementById('destino').value;
+        
+        if (origen && destino) {
+            // Aquí iría la llamada AJAX al backend para calcular ruta con Dijkstra
+            document.getElementById('resultadoRuta').classList.remove('d-none');
+            document.getElementById('rutaInfo').textContent = 
+                'Algoritmo de Dijkstra en desarrollo. Próximamente disponible.';
+        }
+    });
+</script>
+{% endblock %}

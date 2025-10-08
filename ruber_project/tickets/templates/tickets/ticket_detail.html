@@ -1,0 +1,81 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Ticket - Ruber{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-gradient text-white text-center py-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <h2 class="mb-0"><i class="fas fa-ticket-alt"></i> Ticket Electrónico</h2>
+                </div>
+                <div class="card-body p-5 text-center">
+                    <!-- QR Code -->
+                    <div class="mb-4">
+                        {% if ticket.codigo_qr %}
+                        <img src="{{ ticket.codigo_qr.url }}" alt="Código QR" class="img-fluid" style="max-width: 300px;">
+                        {% else %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i> Generando código QR...
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Información del ticket -->
+                    <div class="border-top pt-4">
+                        <h4 class="text-primary">{{ ticket.itinerario.nombre }}</h4>
+                        <p class="text-muted mb-3">{{ ticket.itinerario.turista.get_full_name }}</p>
+                        
+                        <div class="row text-start mt-4">
+                            <div class="col-6">
+                                <p class="mb-2"><strong><i class="fas fa-calendar"></i> Fecha Inicio:</strong></p>
+                                <p>{{ ticket.itinerario.fecha_inicio }}</p>
+                            </div>
+                            <div class="col-6">
+                                <p class="mb-2"><strong><i class="fas fa-calendar-check"></i> Válido Hasta:</strong></p>
+                                <p>{{ ticket.fecha_validez }}</p>
+                            </div>
+                            <div class="col-12 mt-3">
+                                <p class="mb-2"><strong><i class="fas fa-barcode"></i> Código:</strong></p>
+                                <p class="font-monospace text-muted">{{ ticket.codigo }}</p>
+                            </div>
+                            <div class="col-12 mt-3">
+                                <p class="mb-2"><strong><i class="fas fa-info-circle"></i> Estado:</strong></p>
+                                <span class="badge 
+                                    {% if ticket.estado == 'activo' %}bg-success
+                                    {% elif ticket.estado == 'usado' %}bg-secondary
+                                    {% elif ticket.estado == 'vencido' %}bg-danger
+                                    {% else %}bg-warning{% endif %} 
+                                    fs-6">
+                                    {{ ticket.get_estado_display }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Instrucciones -->
+                    <div class="alert alert-info mt-4 text-start">
+                        <strong><i class="fas fa-lightbulb"></i> Instrucciones:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Presenta este código QR al ingresar a cada destino</li>
+                            <li>Guarda este ticket en tu dispositivo móvil</li>
+                            <li>El ticket es válido hasta la fecha indicada</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Botones -->
+                    <div class="mt-4">
+                        <a href="{% url 'itinerarios:detalle' ticket.itinerario.id %}" class="btn btn-primary">
+                            <i class="fas fa-route"></i> Ver Itinerario
+                        </a>
+                        <button class="btn btn-secondary" onclick="window.print()">
+                            <i class="fas fa-print"></i> Imprimir
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

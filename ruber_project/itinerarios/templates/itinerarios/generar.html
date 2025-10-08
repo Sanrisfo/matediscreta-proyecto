@@ -1,0 +1,48 @@
+{% extends 'core/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Generar Itinerario - Ruber{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h3 class="mb-0"><i class="fas fa-magic"></i> Generar Itinerario Automático</h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 
+                        Completa tus preferencias y nuestro algoritmo generará el mejor itinerario para ti.
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ form|crispy }}
+                        
+                        <div class="alert alert-warning mt-3">
+                            <strong>Nota:</strong> El algoritmo considerará:
+                            <ul class="mb-0 mt-2">
+                                <li>Rutas óptimas entre destinos (Dijkstra)</li>
+                                <li>Combinaciones de actividades según tus gustos</li>
+                                <li>Restricciones de tiempo y presupuesto</li>
+                                <li>Calificaciones de destinos</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="text-end">
+                            <a href="{% url 'itinerarios:mis_itinerarios' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-cogs"></i> Generar Itinerario
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
