@@ -44,7 +44,7 @@ class Destino(models.Model):
                                        default=0.00)
     
     # Media
-    imagen_principal = models.ImageField(upload_to='destinos/', blank=True, null=True)
+    imagen_principal = models.URLField(max_length=500, blank=True, null=True)
     
     activo = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
@@ -93,7 +93,7 @@ class ImagenDestino(models.Model):
     Galería de imágenes para cada destino
     """
     destino = models.ForeignKey(Destino, on_delete=models.CASCADE, related_name='imagenes')
-    imagen = models.ImageField(upload_to='destinos/galeria/')
+    imagen = models.URLField(max_length=500)
     descripcion = models.CharField(max_length=255, blank=True)
     orden = models.IntegerField(default=0)
     
