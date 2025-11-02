@@ -1,0 +1,493 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}{{ destino.nombre }} - Ruber{% endblock %}
+
+{% block map %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+{% endblock %}
+{% block extra_css %}
+<style>
+    .hero-image {
+        height: 400px;
+        object-fit: cover;
+        width: 100%;
+    }
+    
+    .galeria-img {
+        height: 150px;
+        object-fit: cover;
+        cursor: pointer;
+        transition: transform 0.3s ease;
+    }
+    
+    .galeria-img:hover {
+        transform: scale(1.05);
+    }
+    
+    .info-badge {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 0.8rem 1.2rem;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin: 0.5rem;
+    }
+    
+    .actividad-card {
+        border-left: 4px solid #667eea;
+        transition: all 0.3s ease;
+    }
+    
+    .actividad-card:hover {
+        border-left-color: #764ba2;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .tag-badge {
+        background-color: #e3f2fd;
+        color: #1976d2;
+        padding: 0.4rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        margin: 0.2rem;
+        display: inline-block;
+    }
+    
+    .mapa-container {
+        height: 300px;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .row {
+        justify-content: center;
+        --bs-gutter-x: 1.5rem;
+        --bs-gutter-y: 0;
+        display: flex;
+        flex-wrap: wrap;
+        margin-top: calc(-1 * var(--bs-gutter-y));
+        margin-right: calc(-.5 * var(--bs-gutter-x));
+        margin-left: calc(-.5 * var(--bs-gutter-x));
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<div class="bg-light py-3">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Inicio</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'lugares:lista_destinos' %}">Destinos</a></li>
+                <li class="breadcrumb-item active">{{ destino.nombre }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<!-- Imagen Principal -->
+<div class="container-fluid p-0">
+    {% if destino.imagen_principal %}
+    <img src="{{ destino.imagen_principal }}" 
+         alt="{{ destino.nombre }}" 
+         class="hero-image">
+    {% else %}
+    <div class="hero-image bg-secondary d-flex align-items-center justify-content-center">
+        <i class="fas fa-image fa-5x text-white-50"></i>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Contenido Principal -->
+<div class="container py-5">
+    <div class="row">
+        <!-- Columna Izquierda - Información Principal -->
+        <div class="col-lg-8">
+            <!-- Encabezado -->
+            <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h1 class="display-5 fw-bold mb-2">{{ destino.nombre }}</h1>
+                        <p class="text-muted">
+                            <i class="fas fa-map-marker-alt"></i> {{ destino.direccion|default:"Ubicación no especificada" }}
+                        </p>
+                    </div>
+                    <div class="text-end">
+                        <div class="text-warning mb-2">
+                            <i class="fas fa-star"></i>
+                            <span class="fs-4 fw-bold">{{ destino.calificacion }}</span>
+                            <span class="text-muted">/5.0</span>
+                        </div>
+                        <span class="badge bg-primary fs-6">{{ destino.categoria.nombre }}</span>
+                    </div>
+                </div>
+                
+                <!-- Tags de Preferencias -->
+                {% if destino.tags_preferencias %}
+                <div class="mb-3">
+                    <strong><i class="fas fa-tags"></i> Tags:</strong>
+                    {% for tag in destino.tags_preferencias %}
+                    <span class="tag-badge">{{ tag }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Información Rápida -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="info-badge">
+                        <i class="fas fa-dollar-sign fa-2x"></i>
+                        <div>
+                            <small>Costo Entrada</small>
+                            <div class="fw-bold">S/ {{ destino.costo_entrada }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="info-badge">
+                        <i class="fas fa-clock fa-2x"></i>
+                        <div>
+                            <small>Tiempo Estimado</small>
+                            <div class="fw-bold">{{ destino.tiempo_visita_estimado }} min</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="info-badge">
+                        <i class="fas fa-heart fa-2x"></i>
+                        <div>
+                            <small>Calificación</small>
+                            <div class="fw-bold">{{ destino.calificacion }}/5.0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Descripción -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h4 class="card-title mb-3">
+                        <i class="fas fa-info-circle text-primary"></i> Descripción
+                    </h4>
+                    <p class="card-text" style="line-height: 1.8; text-align: justify;">
+                        {{ destino.descripcion }}
+                    </p>
+                </div>
+            </div>
+
+            <!-- Actividades Disponibles -->
+            {% if actividades %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-running text-primary"></i> Actividades Disponibles
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% for actividad in actividades %}
+                    <div class="actividad-card card mb-3">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <h5 class="card-title mb-2">
+                                        {{ actividad.nombre }}
+                                        <span class="badge bg-info ms-2">{{ actividad.get_tipo_display }}</span>
+                                    </h5>
+                                    <p class="card-text text-muted mb-2">{{ actividad.descripcion }}</p>
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock"></i> Duración: {{ actividad.duracion_minutos }} minutos
+                                    </small>
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <div class="fs-4 fw-bold text-success">
+                                        S/ {{ actividad.costo }}
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-primary mt-2" 
+                                            data-bs-toggle="tooltip" 
+                                            title="Agregar a itinerario">
+                                        <i class="fas fa-plus"></i> Agregar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> 
+                No hay actividades disponibles actualmente para este destino.
+            </div>
+            {% endif %}
+
+            <!-- Galería de Imágenes -->
+            {% if imagenes %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-images text-primary"></i> Galería de Fotos
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        {% for imagen in imagenes %}
+                        <div class="col-md-4 col-sm-6">
+                            <img src="{{ imagen.imagen.url }}" 
+                                 alt="{{ imagen.descripcion }}" 
+                                 class="img-fluid rounded galeria-img"
+                                 data-bs-toggle="modal" 
+                                 data-bs-target="#imagenModal{{ imagen.id }}">
+                            {% if imagen.descripcion %}
+                            <small class="text-muted d-block mt-1">{{ imagen.descripcion }}</small>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Modal para cada imagen -->
+                        <div class="modal fade" id="imagenModal{{ imagen.id }}" tabindex="-1">
+                            <div class="modal-dialog modal-lg modal-dialog-centered">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">{{ imagen.descripcion|default:"Imagen" }}</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body p-0">
+                                        <img src="{{ imagen.imagen.url }}" class="img-fluid w-100" alt="{{ imagen.descripcion }}">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Columna Derecha - Sidebar -->
+        <div class="col-lg-4">
+            <!-- Mapa de Ubicación -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-map-marked-alt"></i> Ubicación
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div id="map" class="mapa-container"></div>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2"><strong>Coordenadas:</strong></p>
+                    <p class="text-muted small mb-0">
+                        Lat: {{ destino.latitud }}<br>
+                        Lng: {{ destino.longitud }}
+                    </p>
+                    <a href="https://www.google.com/maps/search/?api=1&query={{ destino.latitud }},{{ destino.longitud }}" 
+                       target="_blank" 
+                       class="btn btn-outline-primary btn-sm w-100 mt-3">
+                        <i class="fas fa-external-link-alt"></i> Abrir en Google Maps
+                    </a>
+                </div>
+            </div>
+
+            <!-- Información de Contacto / Reserva -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calendar-check"></i> Planifica tu Visita
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'itinerarios:generar' %}" class="btn btn-success w-100 mb-2">
+                        <i class="fas fa-plus-circle"></i> Agregar a Itinerario
+                    </a>
+                    <a href="{% url 'rutas:mapa_rutas' %}" class="btn btn-outline-primary w-100">
+                        <i class="fas fa-route"></i> Ver Rutas
+                    </a>
+                    {% else %}
+                    <div class="alert alert-warning mb-0">
+                        <i class="fas fa-info-circle"></i> 
+                        <strong>Inicia sesión</strong> para agregar este destino a tu itinerario.
+                    </div>
+                    <a href="{% url 'usuarios:login' %}" class="btn btn-primary w-100 mt-3">
+                        <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Información Adicional -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-lightbulb text-warning"></i> Consejos
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success"></i> 
+                            Mejor horario: Mañanas
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success"></i> 
+                            Llevar protector solar
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success"></i> 
+                            Cámara fotográfica recomendada
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success"></i> 
+                            Vestimenta cómoda
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botón Volver -->
+    <div class="text-center mt-5">
+        <a href="{% url 'lugares:lista_destinos' %}" class="btn btn-lg btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Volver a la lista de destinos
+        </a>
+    </div>
+</div>
+
+<!-- ===================================
+     BARRA DE RECOMENDACIONES (NUEVA)
+     =================================== -->
+{% if recomendaciones %}
+<div class="bg-light py-5 mt-5">
+    <div class="container">
+        <div class="text-center mb-4">
+            <h2 class="display-6 fw-bold">
+                <i class="fas fa-lightbulb text-warning"></i> 
+                Destinos Similares que te Pueden Interesar
+            </h2>
+        </div>
+        
+        <div class="row g-4">
+            {% for destino_rec, peso, porcentaje in recomendaciones %}
+            <div class="col-md-4 col-lg-2">
+                <div class="card h-100 shadow-sm hover-shadow position-relative">
+                    <!-- Badge de similitud -->
+                    <div class="position-absolute top-0 end-0 m-2" style="z-index: 10;">
+                        <span class="badge bg-success" 
+                              data-bs-toggle="tooltip" 
+                              title="Similitud calculada por categoría, tags y actividades">
+                            {{ porcentaje }}% match
+                        </span>
+                    </div>
+                    
+                    <!-- Imagen -->
+                    {% if destino_rec.imagen_principal %}
+                    <img src="{{ destino_rec.imagen_principal }}" 
+                         class="card-img-top" 
+                         alt="{{ destino_rec.nombre }}" 
+                         style="height: 150px; object-fit: cover;">
+                    {% else %}
+                    <div class="bg-secondary text-white d-flex align-items-center justify-content-center" 
+                         style="height: 150px;">
+                        <i class="fas fa-image fa-2x"></i>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Contenido -->
+                    <div class="card-body p-3">
+                        <h6 class="card-title mb-2">{{ destino_rec.nombre|truncatewords:4 }}</h6>
+                        <p class="card-text small text-muted mb-2">
+                            {{ destino_rec.descripcion|truncatewords:10 }}
+                        </p>
+                        
+                        <!-- Info rápida -->
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-warning">
+                                <i class="fas fa-star"></i> {{ destino_rec.calificacion }}
+                            </small>
+                            <small class="text-success fw-bold">
+                                S/ {{ destino_rec.costo_entrada }}
+                            </small>
+                        </div>
+                        
+                        <!-- Barra de similitud -->
+                        <div class="mb-2">
+                            <small class="text-muted">Similitud:</small>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar 
+                                    {% if porcentaje >= 70 %}bg-success
+                                    {% elif porcentaje >= 50 %}bg-info
+                                    {% elif porcentaje >= 30 %}bg-warning
+                                    {% else %}bg-secondary{% endif %}" 
+                                    role="progressbar" 
+                                    style="width: {{ porcentaje }}%;"
+                                    aria-valuenow="{{ porcentaje }}" 
+                                    aria-valuemin="0" 
+                                    aria-valuemax="100">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Botón -->
+                        <a href="{% url 'lugares:detalle_destino' destino_rec.id %}" 
+                           class="btn btn-sm btn-outline-primary w-100">
+                            Ver Detalle
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        
+    </div>
+</div>
+{% else %}
+<!-- Sin recomendaciones -->
+<div class="bg-light py-4 mt-5">
+    <div class="container text-center">
+        <p class="text-muted">
+            <i class="fas fa-exclamation-circle"></i> 
+            No hay suficientes destinos para generar recomendaciones. Agrega más destinos para activar esta función.
+        </p>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+
+
+{% block extra_js %}
+<!-- Leaflet para el mapa -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+    // Inicializar mapa
+    const map = L.map('map').setView([-12.056166, -77.071153    ], 15);
+    
+    // Agregar capa de mapa
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    
+    // Agregar marcador del destino
+    const marker = L.marker([-12.056166, -77.071153])
+        .addTo(map)
+        .bindPopup('<strong>{{ destino.nombre }}</strong><br>{{ destino.direccion|default:"" }}')
+        .openPopup();
+    
+    // Activar tooltips de Bootstrap
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+</script>
+{% endblock %}
