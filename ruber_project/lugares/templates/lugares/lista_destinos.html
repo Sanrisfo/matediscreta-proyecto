@@ -12,10 +12,12 @@
             <div class="card">
                 <div class="card-body">
                     <form method="get" class="row g-3">
+
                         <div class="col-md-4">
                             <label class="form-label">Buscar</label>
                             <input type="text" name="q" class="form-control" placeholder="Nombre o descripción..." value="{{ request.GET.q }}">
                         </div>
+                        
                         <div class="col-md-4">
                             <label class="form-label">Categoría</label>
                             <select name="categoria" class="form-select">
@@ -29,36 +31,74 @@
                         </div>
 
                         <div class="col-md-4 d-flex align-items-end">
-        {% if request.user.is_authenticated %}
-            
-            {% if request.GET.preferencia == 'true' %}
-                {% with query_string=request.GET.urlencode|cut:'&preferencia=true'|cut:'preferencia=true' %}
-                <a href="?{{ query_string }}" class="btn btn-warning w-100">
-                    <i class="fas fa-heart-broken"></i> Quitar Preferencias
-                </a>
-                {% endwith %}
-            {% else %}
-                {% with query_string=request.GET.urlencode %}
-                <a href="?{{ query_string|default:"" }}&preferencia=true" 
-                   class="btn btn-success w-100">
-                    <i class="fas fa-heart"></i> Filtrar por mis Preferencias
-                </a>
-                {% endwith %}
-            {% endif %}
-
-        {% else %}
-            <a href="{% url 'usuarios:login' %}" class="btn btn-outline-secondary w-100 disabled">
-                <i class="fas fa-lock"></i> Inicia sesión para usar tus preferencias
-            </a>
-        {% endif %}
-    </div>
-
-
-                        <div class="col-md-4 d-flex align-items-end">
                             <button type="submit" class="btn btn-primary w-100">
                                 <i class="fas fa-filter"></i> Filtrar
                             </button>
                         </div>
+
+                        <div class="col-md-3">
+                                <label class="form-label">Ordenar por</label>
+                                <select name="orden" class="form-select" id="ordenSelect">
+                                    <option value="nombre" {% if orden_actual == 'nombre' %}selected{% endif %}>
+                                        Alfabético (A-Z)
+                                    </option>
+                                    <option value="calificacion" {% if orden_actual == 'calificacion' %}selected{% endif %}>
+                                        Calificación
+                                    </option>
+                                    <option value="precio" {% if orden_actual == 'precio' %}selected{% endif %}>
+                                        Precio
+                                    </option>
+                                </select>
+                            </div>
+
+                            <!-- Dirección -->
+                            <div class="col-md-2">
+                                <label class="form-label">Dirección</label>
+                                <select name="dir" class="form-select">
+                                    <option value="asc" {% if direccion_actual == 'asc' %}selected{% endif %}>
+                                        <i class="fas fa-sort-amount-up"></i> Ascendente
+                                    </option>
+                                    <option value="desc" {% if direccion_actual == 'desc' %}selected{% endif %}>
+                                        <i class="fas fa-sort-amount-down"></i> Descendente
+                                    </option>
+                                </select>
+                            </div>
+
+                            <!-- Botón aplicar -->
+                            <div class="col-md-1 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                            </div>
+                        
+                            <!--PREFERENCIAS DEL USUARIO-->
+                            <div class="col-md-4 d-flex align-items-end">
+                            
+                            {% if request.user.is_authenticated %}
+                                
+                                {% if request.GET.preferencia == 'true' %}
+                                    {% with query_string=request.GET.urlencode|cut:'&preferencia=true'|cut:'preferencia=true' %}
+                                    <a href="?{{ query_string }}" class="btn btn-warning w-100">
+                                        <i class="fas fa-heart-broken"></i> Quitar Preferencias
+                                    </a>
+                                    {% endwith %}
+                                {% else %}
+                                    {% with query_string=request.GET.urlencode %}
+                                    <a href="?{{ query_string|default:"" }}&preferencia=true" 
+                                    class="btn btn-success w-100">
+                                        <i class="fas fa-heart"></i> Filtrar por mis Preferencias
+                                    </a>
+                                    {% endwith %}
+                                {% endif %}
+
+                            {% else %}
+                                <a href="{% url 'usuarios:login' %}" class="btn btn-outline-secondary w-100 disabled">
+                                    <i class="fas fa-lock"></i> Inicia sesión para usar tus preferencias
+                                </a>
+                            {% endif %}
+                        </div>
+
+                        
                     </form>
                     
                 </div>
