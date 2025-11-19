@@ -119,16 +119,60 @@
     });
     
     // TODO: Implementar cálculo de ruta con Dijkstra
+    let rutaLayer = null; // Variable para guardar la línea roja de la ruta
     document.getElementById('rutaForm').addEventListener('submit', function(e) {
         e.preventDefault();
         const origen = document.getElementById('origen').value;
         const destino = document.getElementById('destino').value;
+
+        const resultadoDiv = document.getElementById('resultadoRuta');
+        const rutaInfo = document.getElementById('rutaInfo');
         
         if (origen && destino) {
-            // Aquí iría la llamada AJAX al backend para calcular ruta con Dijkstra
-            document.getElementById('resultadoRuta').classList.remove('d-none');
-            document.getElementById('rutaInfo').textContent = 
-                'Algoritmo de Dijkstra en desarrollo. Próximamente disponible.';
+
+            // Aqui se muestra una parte de carga
+            resultadoDiv.classList.remove('d-none');
+            rutaInfo.innerHTML = '<div class="spinner-border spinner-border-sm"></div> Calculando ruta óptima...';
+
+            // Aquí hacemos la petición AJAX a tu vista de Django
+            fetch(`?origen=${origen}&destino=${destino}`, {
+                headers: {'X-Requested-With': 'XMLHttpRequest'}
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 1. Mostrar información escrita
+                    rutaInfo.innerHTML = `
+                        <strong><i class="fas fa-check-circle text-success"></i> Ruta Encontrada:</strong><br>
+                        Distancia total: <b>${data.distancia} km</b><br>
+                        Camino: ${data.path.map(p => p.nombre).join(' <i class="fas fa-arrow-right small"></i> ')}
+                    `;
+
+                    // 2. Dibujar la línea roja en el mapa
+                    if (rutaLayer) map.removeLayer(rutaLayer); // Borrar ruta anterior si existe
+                    
+                    // Extraer coordenadas del path
+                    const latlngs = data.path.map(p => [p.lat, p.lng]);
+                    
+                    rutaLayer = L.polyline(latlngs, {
+                        color: 'red',
+                        weight: 5,
+                        opacity: 0.8,
+                        dashArray: '10, 10', 
+                        dashOffset: '20'
+                    }).addTo(map);
+
+                    // Hacer zoom para ver toda la ruta
+                    map.fitBounds(rutaLayer.getBounds());
+
+                } else {
+                    rutaInfo.innerHTML = `<span class="text-danger"><i class="fas fa-times-circle"></i> Error: ${data.error}</span>`;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                rutaInfo.innerHTML = '<span class="text-danger">Ocurrió un error al calcular la ruta.</span>';
+            });
         }
     });
 </script>
