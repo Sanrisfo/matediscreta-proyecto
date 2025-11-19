@@ -4,11 +4,16 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
 <style>
     #map {
         height: 600px;
         width: 100%;
         border-radius: 8px;
+    }
+    /* Ocultar el panel lateral de texto del plugin de rutas */
+    .leaflet-routing-container {
+        display: none;
     }
 </style>
 {% endblock %}
@@ -18,6 +23,7 @@
     <h1 class="text-center mb-4">Mapa de Rutas Turísticas</h1>
     
     <div class="row">
+        <!-- Panel lateral -->
         <div class="col-md-3">
             <div class="card shadow">
                 <div class="card-header bg-primary text-white">
@@ -59,6 +65,7 @@
             </div>
         </div>
         
+        <!-- Mapa -->
         <div class="col-md-9">
             <div class="card shadow">
                 <div class="card-body p-0">
@@ -68,28 +75,33 @@
             
             <div class="alert alert-warning mt-3">
                 <i class="fas fa-info-circle"></i> 
-                <strong>Nota:</strong> El mapa usa Leaflet.js. Los datos se cargan desde la base de datos.
-                El algoritmo de Dijkstra está en desarrollo.
+                <strong>Nota:</strong> Usando Dijkstra en el servidor y OSRM en el cliente para trazar las calles.
             </div>
         </div>
     </div>
 </div>
+
+<!-- Insertar datos JSON de forma segura -->
+{{ destinos_json|json_script:"destinos-data" }}
+{{ rutas_json|json_script:"rutas-data" }}
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+
 <script>
     // Inicializar mapa
     const map = L.map('map').setView([-12.0464, -77.0428], 13); // Lima, Perú
     
-    // Capa de mapa
+    // Capa base de OpenStreetMap
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
     }).addTo(map);
     
-    // Cargar destinos
-    const destinos = { { destinos_json|safe } };
-    const rutas = { { rutas_json|safe } };
+    // Cargar datos de Django (JSON seguro)
+    const destinos = JSON.parse(document.getElementById('destinos-data').textContent);
+    const rutas = JSON.parse(document.getElementById('rutas-data').textContent);
     
     // Agregar marcadores
     const markers = {};
@@ -100,70 +112,54 @@
         markers[destino.id] = marker;
     });
     
-    // Dibujar rutas
-    rutas.forEach(ruta => {
-        const origen = destinos.find(d => d.id === ruta.origen_id);
-        const destino = destinos.find(d => d.id === ruta.destino_id);
-        
-        if (origen && destino) {
-            L.polyline([
-                [origen.latitud, origen.longitud],
-                [destino.latitud, destino.longitud]
-            ], {
-                color: 'blue',
-                weight: 2,
-                opacity: 0.6
-            }).bindPopup(`${ruta.distancia_km} km - ${ruta.tiempo_minutos} min`)
-            .addTo(map);
-        }
-    });
-    
-    // TODO: Implementar cálculo de ruta con Dijkstra
-    let rutaLayer = null; // Variable para guardar la línea roja de la ruta
+    // Variable para guardar el control de rutas actual
+    let routingControl = null;
+
     document.getElementById('rutaForm').addEventListener('submit', function(e) {
         e.preventDefault();
-        const origen = document.getElementById('origen').value;
-        const destino = document.getElementById('destino').value;
+        const origenId = document.getElementById('origen').value;
+        const destinoId = document.getElementById('destino').value;
 
         const resultadoDiv = document.getElementById('resultadoRuta');
         const rutaInfo = document.getElementById('rutaInfo');
         
-        if (origen && destino) {
-
-            // Aqui se muestra una parte de carga
+        if (origenId && destinoId) {
             resultadoDiv.classList.remove('d-none');
-            rutaInfo.innerHTML = '<div class="spinner-border spinner-border-sm"></div> Calculando ruta óptima...';
+            rutaInfo.innerHTML = '<div class="spinner-border spinner-border-sm"></div> Consultando grafo y trazando calles...';
 
-            // Aquí hacemos la petición AJAX a tu vista de Django
-            fetch(`?origen=${origen}&destino=${destino}`, {
+            // 1. Consultar al backend (algoritmo Dijkstra en Python)
+            fetch(`?origen=${origenId}&destino=${destinoId}`, {
                 headers: {'X-Requested-With': 'XMLHttpRequest'}
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // 1. Mostrar información escrita
                     rutaInfo.innerHTML = `
                         <strong><i class="fas fa-check-circle text-success"></i> Ruta Encontrada:</strong><br>
-                        Distancia total: <b>${data.distancia} km</b><br>
+                        Distancia total (Grafo): <b>${data.distancia} km</b><br>
                         Camino: ${data.path.map(p => p.nombre).join(' <i class="fas fa-arrow-right small"></i> ')}
                     `;
 
-                    // 2. Dibujar la línea roja en el mapa
-                    if (rutaLayer) map.removeLayer(rutaLayer); // Borrar ruta anterior si existe
-                    
-                    // Extraer coordenadas del path
-                    const latlngs = data.path.map(p => [p.lat, p.lng]);
-                    
-                    rutaLayer = L.polyline(latlngs, {
-                        color: 'red',
-                        weight: 5,
-                        opacity: 0.8,
-                        dashArray: '10, 10', 
-                        dashOffset: '20'
-                    }).addTo(map);
+                    // Eliminar ruta anterior si existe
+                    if (routingControl) {
+                        map.removeControl(routingControl);
+                        routingControl = null;
+                    }
 
-                    // Hacer zoom para ver toda la ruta
-                    map.fitBounds(rutaLayer.getBounds());
+                    // Crear puntos de paso desde el path del backend
+                    const waypoints = data.path.map(p => L.latLng(p.lat, p.lng));
+
+                    // 2. Usar Leaflet Routing Machine para trazar ruta calle por calle
+                    routingControl = L.Routing.control({
+                        waypoints: waypoints,
+                        routeWhileDragging: false,
+                        draggableWaypoints: false,
+                        addWaypoints: false,
+                        createMarker: function() { return null; },
+                        lineOptions: {
+                            styles: [{color: 'red', opacity: 0.8, weight: 6}]
+                        }
+                    }).addTo(map);
 
                 } else {
                     rutaInfo.innerHTML = `<span class="text-danger"><i class="fas fa-times-circle"></i> Error: ${data.error}</span>`;

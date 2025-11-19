@@ -2,11 +2,7 @@ import heapq
 from collections import defaultdict
 from .models import Ruta
 
-class GrafoRutas:
-    """
-    Clase para manejar el grafo de rutas y aplicar algoritmos
-    """
-    
+class GrafoRutas:    
     def __init__(self):
         self.grafo = defaultdict(list)
         self.cargar_rutas()
