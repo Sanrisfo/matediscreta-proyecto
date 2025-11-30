@@ -1,0 +1,95 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="bg-primary text-white py-5">
+    <div class="container text-center">
+        <h1 class="display-4 mb-3">Descubre Tu Próxima Aventura</h1>
+        <p class="lead mb-4">Planifica tu viaje perfecto con itinerarios inteligentes y personalizados</p>
+        
+        <!-- Barra de búsqueda -->
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <form method="get" action="{% url 'lugares:lista_destinos' %}" class="input-group input-group-lg">
+                    <input type="text" name="q" class="form-control" placeholder="¿A dónde quieres ir? Ej: playas, museos, gastronomía...">
+                    <button class="btn btn-light" type="submit">
+                        <i class="fas fa-search"></i> Buscar
+                    </button>
+                </form>
+                <p class="text-white-50 mt-2 small">
+                    <i class="fas fa-lightbulb"></i> Prueba: "Quiero un tour de 2 días con museos y comida típica"
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Categorías -->
+<section class="py-5">
+    <div class="container">
+        <h2 class="text-center mb-4">Explora por Categorías</h2>
+        <div class="row g-3">
+            {% for categoria in categorias %}
+            <div class="col-md-3 col-sm-6">
+                <a href="{% url 'lugares:lista_destinos' %}?categoria={{ categoria.id }}" class="text-decoration-none">
+                    <div class="card text-center h-100 hover-shadow">
+                        <div class="card-body">
+                            <i class="{{ categoria.icono|default:'fas fa-map-marker-alt' }} fa-3x text-primary mb-3"></i>
+                            <h5 class="card-title">{{ categoria.nombre }}</h5>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Destinos Destacados -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <h2 class="text-center mb-4">Destinos Destacados</h2>
+        <div class="row g-4">
+            {% for destino in destinos_destacados %}
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm">
+                    {% if destino.imagen_principal %}
+                    <img src="{{ destino.imagen_principal }}" class="card-img-top" alt="{{ destino.nombre }}" style="height: 200px; object-fit: cover;">
+                    {% else %}
+                    <div class="bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 200px;">
+                        <i class="fas fa-image fa-3x"></i>
+                    </div>
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ destino.nombre }}</h5>
+                        <p class="card-text">{{ destino.descripcion|truncatewords:15 }}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="badge bg-primary">{{ destino.categoria.nombre }}</span>
+                            <span class="text-warning">
+                                <i class="fas fa-star"></i> {{ destino.calificacion }}
+                            </span>
+                        </div>
+                        <a href="{% url 'lugares:detalle_destino' destino.id %}" class="btn btn-outline-primary btn-sm mt-2 w-100">
+                            Ver Detalles
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+{% if not user.is_authenticated %}
+<section class="py-5 bg-primary text-white text-center">
+    <div class="container">
+        <h2 class="mb-3">¿Listo para tu aventura?</h2>
+        <p class="lead mb-4">Regístrate y genera tu itinerario personalizado en minutos</p>
+        <a href="{% url 'usuarios:registro' %}" class="btn btn-light btn-lg">
+            Comenzar Ahora <i class="fas fa-arrow-right"></i>
+        </a>
+    </div>
+</section>
+{% endif %}
+{% endblock %}

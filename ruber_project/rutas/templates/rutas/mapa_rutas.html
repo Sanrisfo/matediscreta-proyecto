@@ -1,0 +1,277 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+
+<div style="display: flex; width: 100%; height: 90vh;">
+    
+    <!-- Panel lateral -->
+    <div style="width: 320px; padding: 15px; background: #f5f5f5; border-right: 1px solid #ccc; overflow-y: auto;">
+        <h3>Rutas Turísticas</h3>
+
+        <label>Selecciona un destino:</label>
+        <select id="destinoSelect" class="form-control mb-3">
+            <option value="">-- Seleccione --</option>
+            {% for d in destinos %}
+            <option value="{{ d.id }}">{{ d.nombre }}</option>
+            {% endfor %}
+        </select>
+
+        <button class="btn btn-primary mb-3" onclick="usarMiUbicacion()">📍 Usar mi ubicación</button>
+
+        <button class="btn btn-success mb-3" onclick="calcularRuta()">Calcular Ruta</button>
+
+        <div id="infoRuta" style="margin-top: 15px; display:none;">
+            <h4>Resultado</h4>
+            <p><b>Distancia total:</b> <span id="distanciaTotal"></span> km</p>
+        </div>
+
+        <div id="errorBox" style="display:none; margin-top:10px;" class="alert alert-danger"></div>
+    </div>
+
+    <!-- Mapa -->
+    <div id="map" style="flex: 1; height: 100%;"></div>
+
+</div>
+
+
+<!-- Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+// ==========================================
+// VARIABLES GLOBALES
+// ==========================================
+
+let map;
+let markerUsuario = null;
+let rutaPolyline = null;
+let miLat = null;
+let miLng = null;
+
+const destinos = JSON.parse(`{{ destinos_json|escapejs }}`);
+
+
+// ==========================================
+// INICIALIZAR MAPA
+// ==========================================
+document.addEventListener("DOMContentLoaded", () => {
+    map = L.map('map').setView([-12.0464, -77.0428], 12);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 18
+    }).addTo(map);
+
+    cargarMarcadoresDestinos();
+});
+
+
+// ==========================================
+// MARCADORES DE DESTINOS
+// ==========================================
+function cargarMarcadoresDestinos() {
+    destinos.forEach(dest => {
+        L.marker([parseFloat(dest.latitud), parseFloat(dest.longitud)])
+            .addTo(map)
+            .bindPopup(`<b>${dest.nombre}</b>`);
+    });
+}
+
+
+// ==========================================
+// UBICACIÓN REAL DEL USUARIO
+// ==========================================
+function usarMiUbicacion() {
+    // 1. Verificar si el navegador soporta geolocalización
+    if (!("geolocation" in navigator)) {
+        mostrarError("Tu navegador no soporta geolocalización.");
+        return;
+    }
+
+    // Feedback visual para que el usuario sepa que está cargando
+    const btn = document.querySelector("button[onclick='usarMiUbicacion()']");
+    const textoOriginal = btn.innerHTML;
+    btn.innerHTML = "⌛ Buscando...";
+    btn.disabled = true;
+
+    // 2. Pedir permiso y obtener coordenadas
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            // -- ÉXITO --
+            miLat = position.coords.latitude;
+            miLng = position.coords.longitude;
+
+            console.log("Ubicación encontrada:", miLat, miLng);
+
+            // A) Centrar el mapa en tu ubicación
+            map.setView([miLat, miLng], 15);
+
+            // B) Dibujar un marcador donde estás
+            if (markerUsuario) {
+                map.removeLayer(markerUsuario); // Borrar el anterior si existe
+            }
+
+            markerUsuario = L.marker([miLat, miLng], {
+                title: "Mi Ubicación"
+            }).addTo(map)
+              .bindPopup("<b>📍 ¡Estás aquí!</b>").openPopup();
+
+            // C) Restaurar el botón
+            btn.innerHTML = textoOriginal;
+            btn.disabled = false;
+            
+            // Ocultar errores previos si los había
+            ocultarError(); 
+        },
+        (error) => {
+            // -- ERROR --
+            console.error("Error de GPS:", error);
+            
+            let mensaje = "No pudimos obtener tu ubicación.";
+            if (error.code === 1) mensaje = "Debes permitir el acceso a la ubicación.";
+            if (error.code === 2) mensaje = "La señal GPS no está disponible.";
+            if (error.code === 3) mensaje = "Se agotó el tiempo de espera.";
+
+            mostrarError(mensaje);
+            
+            // Restaurar botón
+            btn.innerHTML = textoOriginal;
+            btn.disabled = false;
+        },
+        {
+            enableHighAccuracy: true, // Intenta usar GPS preciso
+            timeout: 10000,           // Esperar máximo 10 segundos
+            maximumAge: 0             // No usar caché vieja
+        }
+    );
+}
+
+
+// ==========================================
+// CALCULAR RUTA (POST JSON)
+// ==========================================
+function calcularRuta() {
+
+    const destinoId = document.getElementById("destinoSelect").value;
+
+    if (!miLat || !miLng) {
+        mostrarError("Debes usar tu ubicación antes de calcular una ruta.");
+        return;
+    }
+
+    if (!destinoId) {
+        mostrarError("Debes seleccionar un destino.");
+        return;
+    }
+
+    const payload = {
+        lat_origen: miLat,
+        lng_origen: miLng,
+        destino_id: parseInt(destinoId)
+    };
+
+    fetch("/rutas/mapa/", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        if (!data.success) {
+            mostrarError(data.error || "Error desconocido");
+            return;
+        }
+
+        mostrarRutaEnMapa(data.ruta);
+        mostrarInfoRuta(data.distancia_km);
+    })
+    .catch(err => {
+        console.error(err);
+        mostrarError("Error de conexión.");
+    });
+}
+
+
+// ==========================================
+// MOSTRAR RUTA EN EL MAPA
+// ==========================================
+// Variable global para guardar la capa de la ruta y poder borrarla después
+let rutaLayer = null; 
+
+function mostrarRutaEnMapa(puntos) {
+    // 1. Limpiar ruta anterior si existe
+    if (rutaLayer) {
+        map.removeLayer(rutaLayer);
+    }
+
+    // 2. Extraer coordenadas en formato: "longitud,latitud" (OSRM pide lon,lat)
+    // 'puntos' es lo que te devuelve tu Django: [{lat:..., lng:...}, ...]
+    const coordenadasString = puntos
+        .map(p => `${p.lng},${p.lat}`)
+        .join(";");
+
+    // 3. Llamar a la API pública de OSRM (Gratuita para proyectos pequeños)
+    // profile puede ser: 'driving' (auto), 'walking' (caminar), 'cycling' (bici)
+    const url = `https://router.project-osrm.org/route/v1/driving/${coordenadasString}?overview=full&geometries=geojson`;
+
+    fetch(url)
+        .then(res => res.json())
+        .then(data => {
+            if (data.routes && data.routes.length > 0) {
+                // OSRM nos devuelve la geometría exacta de las calles
+                const rutaGeometria = data.routes[0].geometry;
+
+                // 4. Dibujar la ruta bonita sobre las calles
+                rutaLayer = L.geoJSON(rutaGeometria, {
+                    style: {
+                        color: "blue",     // Color de la línea
+                        weight: 5,         // Grosor
+                        opacity: 0.7       // Transparencia
+                    }
+                }).addTo(map);
+
+                // 5. Ajustar el mapa para ver toda la ruta
+                map.fitBounds(rutaLayer.getBounds());
+            } else {
+                console.error("No se pudo encontrar una ruta en las calles.");
+            }
+        })
+        .catch(err => {
+            console.error("Error conectando con OSRM:", err);
+            // Fallback: Si falla OSRM, dibujamos la línea recta fea original
+            const coordsSimples = puntos.map(p => [p.lat, p.lng]);
+            rutaLayer = L.polyline(coordsSimples, { color: 'red', dashArray: '5, 10' }).addTo(map);
+        });
+}
+
+
+// ==========================================
+// MOSTRAR INFO DE LA RUTA
+// ==========================================
+function mostrarInfoRuta(distancia) {
+    document.getElementById("distanciaTotal").textContent = distancia;
+    document.getElementById("infoRuta").style.display = "block";
+    ocultarError();
+}
+
+
+// ==========================================
+// MANEJO DE ERRORES
+// ==========================================
+function mostrarError(msg) {
+    const box = document.getElementById("errorBox");
+    box.style.display = "block";
+    box.textContent = msg;
+}
+
+function ocultarError() {
+    const box = document.getElementById("errorBox");
+    box.style.display = "none";
+}
+</script>
+
+{% endblock %}
