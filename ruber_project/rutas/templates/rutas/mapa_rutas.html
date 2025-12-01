@@ -52,6 +52,15 @@ let miLng = null;
 
 const destinos = JSON.parse(`{{ destinos_json|escapejs }}`);
 
+//icono rojo del usuario
+var redIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
 
 // ==========================================
 // INICIALIZAR MAPA
@@ -83,68 +92,39 @@ function cargarMarcadoresDestinos() {
 // UBICACIÓN REAL DEL USUARIO
 // ==========================================
 function usarMiUbicacion() {
-    // 1. Verificar si el navegador soporta geolocalización
-    if (!("geolocation" in navigator)) {
-        mostrarError("Tu navegador no soporta geolocalización.");
-        return;
+    // 1. Asignamos coordenadas de la universidad
+    miLat = -12.0527479;
+    miLng = -77.0858328;
+
+    console.log("📍 Usando ubicación fija:", miLat, miLng);
+
+    // 2. Centramos el mapa en ese punto
+    map.setView([miLat, miLng], 15);
+
+    // 3. Si ya había un marcador, lo borramos para no duplicar
+    if (markerUsuario) {
+        map.removeLayer(markerUsuario);
     }
 
-    // Feedback visual para que el usuario sepa que está cargando
-    const btn = document.querySelector("button[onclick='usarMiUbicacion()']");
-    const textoOriginal = btn.innerHTML;
-    btn.innerHTML = "⌛ Buscando...";
-    btn.disabled = true;
+    // 4. Creamos el marcador en la posición fija
+    markerUsuario = L.marker([miLat, miLng], {
+        draggable: true, //este draggable es lo que hace que se pueda mover
+        icon: redIcon
+    }).addTo(map)
+      .bindPopup("<b>📍 Mi Ubicación</b>")
+      .openPopup();
 
-    // 2. Pedir permiso y obtener coordenadas
-    navigator.geolocation.getCurrentPosition(
-        (position) => {
-            // -- ÉXITO --
-            miLat = position.coords.latitude;
-            miLng = position.coords.longitude;
+    // 5. EVENTO EXTRA: Si arrastras el marcador, actualizamos las coordenadas
+    // Esto te permitirá probar rutas desde otros puntos cercanos sin cambiar el código
+    markerUsuario.on('dragend', function(event) {
+        var position = markerUsuario.getLatLng();
+        miLat = position.lat;
+        miLng = position.lng;
+        console.log("Nueva posición arrastrada:", miLat, miLng);
+    });
 
-            console.log("Ubicación encontrada:", miLat, miLng);
-
-            // A) Centrar el mapa en tu ubicación
-            map.setView([miLat, miLng], 15);
-
-            // B) Dibujar un marcador donde estás
-            if (markerUsuario) {
-                map.removeLayer(markerUsuario); // Borrar el anterior si existe
-            }
-
-            markerUsuario = L.marker([miLat, miLng], {
-                title: "Mi Ubicación"
-            }).addTo(map)
-              .bindPopup("<b>📍 ¡Estás aquí!</b>").openPopup();
-
-            // C) Restaurar el botón
-            btn.innerHTML = textoOriginal;
-            btn.disabled = false;
-            
-            // Ocultar errores previos si los había
-            ocultarError(); 
-        },
-        (error) => {
-            // -- ERROR --
-            console.error("Error de GPS:", error);
-            
-            let mensaje = "No pudimos obtener tu ubicación.";
-            if (error.code === 1) mensaje = "Debes permitir el acceso a la ubicación.";
-            if (error.code === 2) mensaje = "La señal GPS no está disponible.";
-            if (error.code === 3) mensaje = "Se agotó el tiempo de espera.";
-
-            mostrarError(mensaje);
-            
-            // Restaurar botón
-            btn.innerHTML = textoOriginal;
-            btn.disabled = false;
-        },
-        {
-            enableHighAccuracy: true, // Intenta usar GPS preciso
-            timeout: 10000,           // Esperar máximo 10 segundos
-            maximumAge: 0             // No usar caché vieja
-        }
-    );
+    // 6. Limpiamos cualquier mensaje de error previo
+    ocultarError();
 }
 
 
