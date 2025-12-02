@@ -17,10 +17,12 @@
     {% block map %}{% endblock %}
     {% block extra_css %}{% endblock %}
 </head>
-<body class="d-flex flex-column min-vh-100"> <nav class="navbar navbar-expand-lg navbar-light bg-white sticky-top shadow-sm py-3">
+<body class="d-flex flex-column min-vh-100"> 
+    
+    <nav class="navbar navbar-expand-lg navbar-light bg-white sticky-top shadow-sm py-3">
         <div class="container">
-            <a class="navbar-brand fw-bold fs-3" href="{% url 'core:home' %}" style="color: var(--primary-color);">
-                Ruber<span style="color: var(--accent-color);">.</span>
+            <a class="navbar-brand fw-bold fs-3" href="{% url 'core:home' %}" style="color: #0077b6;">
+                Ruber<span style="color: #FFB703;">.</span>
             </a>
 
             <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -42,7 +44,7 @@
                     {% if user.is_authenticated %}
                         <li class="nav-item dropdown ms-lg-3">
                             <a class="nav-link dropdown-toggle btn btn-outline-light text-dark border-0" href="#" role="button" data-bs-toggle="dropdown">
-                                <img src="https://ui-avatars.com/api/?name={{ user.username }}&background=0D8ABC&color=fff" class="rounded-circle me-1" width="30">
+                                <img src="https://ui-avatars.com/api/?name={{ user.username }}&background=00838F&color=fff" class="rounded-circle me-1" width="30">
                                 {{ user.username }}
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end border-0 shadow rounded-4 p-2">
@@ -62,7 +64,7 @@
                             <a class="nav-link fw-bold" href="{% url 'usuarios:login' %}">Ingresar</a>
                         </li>
                         <li class="nav-item ms-2">
-                            <a class="btn btn-primary rounded-pill px-4 shadow-sm" href="{% url 'usuarios:registro' %}">
+                            <a class="btn text-white rounded-pill px-4 shadow-sm" style="background-color: #00838F;" href="{% url 'usuarios:registro' %}">
                                 Regístrate
                             </a>
                         </li>
@@ -93,7 +95,8 @@
         <div class="container">
             <div class="row justify-content-center">
                 <div class="col-md-6">
-                    <h5 class="fw-bold text-dark mb-3">Ruber<span style="color: var(--accent-color);">.</span></h5>
+                    <h5 class="fw-bold mb-3" style="color: #1b1a1a;">Ruber<span style="color: #FFB703;">.</span></h5>
+                    
                     <p class="small mb-4">Descubre los mejores destinos, planifica rutas inteligentes y vive experiencias inolvidables en Perú.</p>
                     
                     <div class="mb-4">
