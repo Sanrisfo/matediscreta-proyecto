@@ -1,41 +1,95 @@
 {% extends 'core/base.html' %}
 {% load static %}
 
+{% block title %}Mapa Interactivo | Ruber{% endblock %}
+
 {% block content %}
 
-<div style="display: flex; width: 100%; height: 90vh;">
+<div class="d-flex flex-column flex-md-row w-100 position-relative" style="height: calc(100vh - 76px); overflow: hidden;">
     
-    <!-- Panel lateral -->
-    <div style="width: 320px; padding: 15px; background: #f5f5f5; border-right: 1px solid #ccc; overflow-y: auto;">
-        <h3>Rutas Turísticas</h3>
-
-        <label>Selecciona un destino:</label>
-        <select id="destinoSelect" class="form-control mb-3">
-            <option value="">-- Seleccione --</option>
-            {% for d in destinos %}
-            <option value="{{ d.id }}">{{ d.nombre }}</option>
-            {% endfor %}
-        </select>
-
-        <button class="btn btn-primary mb-3" onclick="usarMiUbicacion()">📍 Usar mi ubicación</button>
-
-        <button class="btn btn-success mb-3" onclick="calcularRuta()">Calcular Ruta</button>
-
-        <div id="infoRuta" style="margin-top: 15px; display:none;">
-            <h4>Resultado</h4>
-            <p><b>Distancia total:</b> <span id="distanciaTotal"></span> km</p>
+    <div class="bg-white shadow-lg p-4 d-flex flex-column" style="width: 100%; max-width: 400px; z-index: 1000; overflow-y: auto;">
+        
+        <div class="mb-4">
+            <h4 class="fw-bold text-primary mb-1">
+                <i class="fas fa-map-signs me-2 text-warning"></i>Planifica tu Ruta
+            </h4>
+            <p class="text-muted small mb-0">Calcula la ruta óptima entre tu ubicación y los mejores destinos.</p>
         </div>
 
-        <div id="errorBox" style="display:none; margin-top:10px;" class="alert alert-danger"></div>
+        <div class="mb-4">
+            <label class="form-label fw-bold small text-uppercase text-muted ls-1">¿A dónde quieres ir?</label>
+            <div class="input-group mb-3">
+                <span class="input-group-text bg-light border-end-0 rounded-start-4 ps-3">
+                    <i class="fas fa-map-marker-alt text-danger"></i>
+                </span>
+                <select id="destinoSelect" class="form-select bg-light border-start-0 rounded-end-4 py-2" style="font-weight: 500;">
+                    <option value="">-- Selecciona un destino --</option>
+                    {% for d in destinos %}
+                    <option value="{{ d.id }}">{{ d.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <button class="btn btn-outline-primary w-100 rounded-pill mb-2 fw-bold" onclick="usarMiUbicacion()">
+                <i class="fas fa-crosshairs me-2"></i> Usar mi ubicación actual
+            </button>
+            
+            <button class="btn btn-primary w-100 rounded-pill py-2 shadow fw-bold mt-2" onclick="calcularRuta()">
+                <i class="fas fa-route me-2"></i> Calcular Ruta Óptima
+            </button>
+        </div>
+
+        <div id="infoRuta" class="card border-0 bg-light rounded-4 mb-3 animate-up" style="display:none; overflow: hidden;">
+            <div class="card-body text-center p-4">
+                <div class="icon-box mb-3 mx-auto bg-white text-primary rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 60px; height: 60px;">
+                    <i class="fas fa-road fa-2x"></i>
+                </div>
+                
+                <h6 class="text-muted text-uppercase small ls-2 fw-bold mb-2">Distancia Total</h6>
+                <h2 class="display-5 fw-bold text-dark mb-0">
+                    <span id="distanciaTotal">0</span> <span class="fs-4 text-muted">km</span>
+                </h2>
+                
+                <div class="mt-3 pt-3 border-top border-2">
+                    <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-2">
+                        <i class="fas fa-check-circle me-1"></i> Ruta Calculada
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-auto pt-4 text-center text-muted small">
+            <i class="fas fa-info-circle me-1"></i> Usa el mapa para ver el trazado real por las calles.
+        </div>
     </div>
 
-    <!-- Mapa -->
-    <div id="map" style="flex: 1; height: 100%;"></div>
+    <div id="map" class="flex-grow-1 bg-light" style="min-height: 400px;"></div>
 
 </div>
 
 
-<!-- Leaflet -->
+<style>
+    /* Animación suave para la tarjeta de resultados */
+    .animate-up {
+        animation: slideUp 0.5s ease-out;
+    }
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Ajuste para inputs */
+    .form-select:focus, .btn:focus {
+        box-shadow: none;
+        border-color: var(--primary-color);
+    }
+    
+    /* Scrollbar bonita para el panel lateral */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-thumb { background: #ddd; border-radius: 3px; }
+</style>
+
+
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -43,16 +97,15 @@
 // ==========================================
 // VARIABLES GLOBALES
 // ==========================================
-
 let map;
 let markerUsuario = null;
-let rutaPolyline = null;
+let rutaLayer = null;
 let miLat = null;
 let miLng = null;
 
 const destinos = JSON.parse(`{{ destinos_json|escapejs }}`);
 
-//icono rojo del usuario
+// Icono rojo personalizado
 var redIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
@@ -66,10 +119,15 @@ var redIcon = new L.Icon({
 // INICIALIZAR MAPA
 // ==========================================
 document.addEventListener("DOMContentLoaded", () => {
-    map = L.map('map').setView([-12.0464, -77.0428], 12);
+    // Iniciamos centrado en Lima (o tu ciudad default)
+    map = L.map('map', { zoomControl: false }).setView([-12.0464, -77.0428], 12);
+    
+    // Movemos el control de zoom a la derecha para que no estorbe el panel
+    L.control.zoom({ position: 'topright' }).addTo(map);
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 18
+        maxZoom: 18,
+        attribution: '© OpenStreetMap'
     }).addTo(map);
 
     cargarMarcadoresDestinos();
@@ -83,146 +141,126 @@ function cargarMarcadoresDestinos() {
     destinos.forEach(dest => {
         L.marker([parseFloat(dest.latitud), parseFloat(dest.longitud)])
             .addTo(map)
-            .bindPopup(`<b>${dest.nombre}</b>`);
+            .bindPopup(`
+                <div class="text-center">
+                    <h6 class="fw-bold mb-1">${dest.nombre}</h6>
+                    <span class="badge bg-primary">Destino</span>
+                </div>
+            `);
     });
 }
 
 
 // ==========================================
-// UBICACIÓN REAL DEL USUARIO
+// UBICACIÓN USUARIO (FIJA PARA PRUEBAS)
 // ==========================================
 function usarMiUbicacion() {
-    // 1. Asignamos coordenadas de la universidad
+    // Coordenadas fijas (Universidad)
     miLat = -12.0527479;
     miLng = -77.0858328;
 
     console.log("📍 Usando ubicación fija:", miLat, miLng);
 
-    // 2. Centramos el mapa en ese punto
     map.setView([miLat, miLng], 15);
 
-    // 3. Si ya había un marcador, lo borramos para no duplicar
-    if (markerUsuario) {
-        map.removeLayer(markerUsuario);
-    }
+    if (markerUsuario) map.removeLayer(markerUsuario);
 
-    // 4. Creamos el marcador en la posición fija
     markerUsuario = L.marker([miLat, miLng], {
-        draggable: true, //este draggable es lo que hace que se pueda mover
+        draggable: true,
         icon: redIcon
     }).addTo(map)
-      .bindPopup("<b>📍 Mi Ubicación</b>")
+      .bindPopup("<b>📍 Mi Ubicación</b><br>Arrastrame para cambiar el origen")
       .openPopup();
 
-    // 5. EVENTO EXTRA: Si arrastras el marcador, actualizamos las coordenadas
-    // Esto te permitirá probar rutas desde otros puntos cercanos sin cambiar el código
     markerUsuario.on('dragend', function(event) {
         var position = markerUsuario.getLatLng();
         miLat = position.lat;
         miLng = position.lng;
-        console.log("Nueva posición arrastrada:", miLat, miLng);
     });
 
-    // 6. Limpiamos cualquier mensaje de error previo
     ocultarError();
 }
 
 
 // ==========================================
-// CALCULAR RUTA (POST JSON)
+// CALCULAR RUTA
 // ==========================================
 function calcularRuta() {
-
+    const btn = document.querySelector("button[onclick='calcularRuta()']");
     const destinoId = document.getElementById("destinoSelect").value;
 
     if (!miLat || !miLng) {
-        mostrarError("Debes usar tu ubicación antes de calcular una ruta.");
+        mostrarError("📍 Por favor, presiona 'Usar mi ubicación' primero.");
         return;
     }
 
     if (!destinoId) {
-        mostrarError("Debes seleccionar un destino.");
+        mostrarError("🗺️ Debes seleccionar un destino de la lista.");
         return;
     }
 
-    const payload = {
-        lat_origen: miLat,
-        lng_origen: miLng,
-        destino_id: parseInt(destinoId)
-    };
+    // Efecto de carga en botón
+    const textoOriginal = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calculando...';
+    btn.disabled = true;
 
-    fetch("/rutas/mapa/", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload)
+    const params = new URLSearchParams({
+        lat: miLat,
+        lon: miLng,
+        destino: destinoId
+    });
+
+    fetch(`/rutas/mapa/?${params.toString()}`, {
+        method: "GET",
+        headers: { "X-Requested-With": "XMLHttpRequest" }
     })
-    .then(res => res.json())
+    .then(res => {
+        if (!res.ok) throw new Error("Error servidor");
+        return res.json();
+    })
     .then(data => {
-
         if (!data.success) {
             mostrarError(data.error || "Error desconocido");
             return;
         }
-
         mostrarRutaEnMapa(data.ruta);
         mostrarInfoRuta(data.distancia_km);
     })
     .catch(err => {
         console.error(err);
-        mostrarError("Error de conexión.");
+        mostrarError("Error de conexión con el servidor.");
+    })
+    .finally(() => {
+        btn.innerHTML = textoOriginal;
+        btn.disabled = false;
     });
 }
 
 
 // ==========================================
-// MOSTRAR RUTA EN EL MAPA
+// DIBUJAR RUTA (OSRM)
 // ==========================================
-// Variable global para guardar la capa de la ruta y poder borrarla después
-let rutaLayer = null; 
-
 function mostrarRutaEnMapa(puntos) {
-    // 1. Limpiar ruta anterior si existe
-    if (rutaLayer) {
-        map.removeLayer(rutaLayer);
-    }
+    if (rutaLayer) map.removeLayer(rutaLayer);
 
-    // 2. Extraer coordenadas en formato: "longitud,latitud" (OSRM pide lon,lat)
-    // 'puntos' es lo que te devuelve tu Django: [{lat:..., lng:...}, ...]
-    const coordenadasString = puntos
-        .map(p => `${p.lng},${p.lat}`)
-        .join(";");
-
-    // 3. Llamar a la API pública de OSRM (Gratuita para proyectos pequeños)
-    // profile puede ser: 'driving' (auto), 'walking' (caminar), 'cycling' (bici)
+    const coordenadasString = puntos.map(p => `${p.lng},${p.lat}`).join(";");
     const url = `https://router.project-osrm.org/route/v1/driving/${coordenadasString}?overview=full&geometries=geojson`;
 
     fetch(url)
         .then(res => res.json())
         .then(data => {
             if (data.routes && data.routes.length > 0) {
-                // OSRM nos devuelve la geometría exacta de las calles
-                const rutaGeometria = data.routes[0].geometry;
-
-                // 4. Dibujar la ruta bonita sobre las calles
-                rutaLayer = L.geoJSON(rutaGeometria, {
-                    style: {
-                        color: "blue",     // Color de la línea
-                        weight: 5,         // Grosor
-                        opacity: 0.7       // Transparencia
-                    }
+                rutaLayer = L.geoJSON(data.routes[0].geometry, {
+                    style: { color: "#0077b6", weight: 6, opacity: 0.8, lineCap: 'round' }
                 }).addTo(map);
 
-                // 5. Ajustar el mapa para ver toda la ruta
-                map.fitBounds(rutaLayer.getBounds());
+                map.fitBounds(rutaLayer.getBounds(), { padding: [50, 50] });
             } else {
-                console.error("No se pudo encontrar una ruta en las calles.");
+                console.error("No route found");
             }
         })
         .catch(err => {
-            console.error("Error conectando con OSRM:", err);
-            // Fallback: Si falla OSRM, dibujamos la línea recta fea original
+            // Fallback línea recta
             const coordsSimples = puntos.map(p => [p.lat, p.lng]);
             rutaLayer = L.polyline(coordsSimples, { color: 'red', dashArray: '5, 10' }).addTo(map);
         });
@@ -230,27 +268,31 @@ function mostrarRutaEnMapa(puntos) {
 
 
 // ==========================================
-// MOSTRAR INFO DE LA RUTA
+// UI HELPERS
 // ==========================================
 function mostrarInfoRuta(distancia) {
     document.getElementById("distanciaTotal").textContent = distancia;
-    document.getElementById("infoRuta").style.display = "block";
+    // Efecto suave de aparición
+    const infoDiv = document.getElementById("infoRuta");
+    infoDiv.style.display = "block";
+    infoDiv.classList.remove("animate-up"); 
+    void infoDiv.offsetWidth; // trigger reflow
+    infoDiv.classList.add("animate-up");
+    
     ocultarError();
 }
 
-
-// ==========================================
-// MANEJO DE ERRORES
-// ==========================================
 function mostrarError(msg) {
     const box = document.getElementById("errorBox");
-    box.style.display = "block";
-    box.textContent = msg;
+    const msgSpan = document.getElementById("errorMsg"); // Necesitas agregar este span en el HTML o usar innerText del box
+    
+    // Ajuste rápido para usar el nuevo diseño de error
+    box.style.display = "flex";
+    box.querySelector("div span").textContent = msg;
 }
 
 function ocultarError() {
-    const box = document.getElementById("errorBox");
-    box.style.display = "none";
+    document.getElementById("errorBox").style.display = "none";
 }
 </script>
 

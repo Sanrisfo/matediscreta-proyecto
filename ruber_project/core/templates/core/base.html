@@ -1,114 +1,116 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Ruber - Guía Turística Inteligente{% endblock %}</title>
+    <title>{% block title %}Ruber | Guía Inteligente{% endblock %}</title>
     
-    <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     
-    <!-- Font Awesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Custom CSS -->
-    {% load static %}
     <link rel="stylesheet" href="{% static 'core/css/styles.css' %}">
     
     {% block map %}{% endblock %}
     {% block extra_css %}{% endblock %}
 </head>
-<body>
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+<body class="d-flex flex-column min-vh-100"> <nav class="navbar navbar-expand-lg navbar-light bg-white sticky-top shadow-sm py-3">
         <div class="container">
-            <a class="navbar-brand" href="{% url 'core:home' %}">
-                <i class="fas fa-compass"></i> Ruber
+            <a class="navbar-brand fw-bold fs-3" href="{% url 'core:home' %}" style="color: var(--primary-color);">
+                Ruber<span style="color: var(--accent-color);">.</span>
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
+
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
+                <ul class="navbar-nav ms-auto align-items-center">
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'lugares:lista_destinos' %}">
-                            <i class="fas fa-map-marked-alt"></i> Destinos
-                        </a>
+                        <a class="nav-link" href="{% url 'core:home' %}">Inicio</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'rutas:mapa_rutas' %}">
-                            <i class="fas fa-route"></i> Rutas
-                        </a>
+                        <a class="nav-link" href="{% url 'lugares:lista_destinos' %}">Destinos</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'rutas:mapa_rutas' %}">Mapa Interactivo</a>
+                    </li>
+
                     {% if user.is_authenticated %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'itinerarios:mis_itinerarios' %}">
-                            <i class="fas fa-calendar-alt"></i> Mis Itinerarios
-                        </a>
-                    </li>
-                    {% endif %}
-                </ul>
-                <ul class="navbar-nav">
-                    {% if user.is_authenticated %}
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-user-circle"></i> {{ user.first_name|default:user.username }}
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="{% url 'usuarios:perfil' %}">Mi Perfil</a></li>
-                            <li><a class="dropdown-item" href="{% url 'itinerarios:generar' %}">Generar Itinerario</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{% url 'usuarios:logout' %}">Cerrar Sesión</a></li>
-                        </ul>
-                    </li>
+                        <li class="nav-item dropdown ms-lg-3">
+                            <a class="nav-link dropdown-toggle btn btn-outline-light text-dark border-0" href="#" role="button" data-bs-toggle="dropdown">
+                                <img src="https://ui-avatars.com/api/?name={{ user.username }}&background=0D8ABC&color=fff" class="rounded-circle me-1" width="30">
+                                {{ user.username }}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end border-0 shadow rounded-4 p-2">
+                                <li><a class="dropdown-item rounded-3" href="{% url 'usuarios:perfil' %}">Mi Perfil</a></li>
+                                <li><a class="dropdown-item rounded-3" href="{% url 'itinerarios:generar' %}">Mis Itinerarios</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form action="{% url 'usuarios:logout' %}" method="post">
+                                        {% csrf_token %}
+                                        <button type="submit" class="dropdown-item text-danger rounded-3">Cerrar Sesión</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </li>
                     {% else %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'usuarios:login' %}">Iniciar Sesión</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link btn btn-light text-primary ms-2" href="{% url 'usuarios:registro' %}">Registrarse</a>
-                    </li>
+                        <li class="nav-item ms-lg-3">
+                            <a class="nav-link fw-bold" href="{% url 'usuarios:login' %}">Ingresar</a>
+                        </li>
+                        <li class="nav-item ms-2">
+                            <a class="btn btn-primary rounded-pill px-4 shadow-sm" href="{% url 'usuarios:registro' %}">
+                                Regístrate
+                            </a>
+                        </li>
                     {% endif %}
                 </ul>
             </div>
         </div>
     </nav>
 
-    <!-- Messages -->
     {% if messages %}
-    <div class="container mt-3">
-        {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <div class="container position-relative">
+        <div class="position-absolute top-0 start-50 translate-middle-x mt-3" style="z-index: 1050; width: 80%; max-width: 600px;">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm rounded-4 border-0" role="alert">
+                <i class="fas fa-info-circle me-2"></i> {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
         </div>
-        {% endfor %}
     </div>
     {% endif %}
 
-    <!-- Main Content -->
-    <main>
+    <main class="flex-grow-1">
         {% block content %}{% endblock %}
     </main>
 
-    <!-- Footer -->
-    <footer class="bg-dark text-white text-center py-4 mt-5">
+    <footer class="bg-light text-secondary text-center py-5 mt-auto border-top">
         <div class="container">
-            <p>&copy; 2024 Ruber - Guía Turística Inteligente. Todos los derechos reservados.</p>
-            <p>
-                <a href="#" class="text-white me-3">Sobre Nosotros</a>
-                <a href="#" class="text-white me-3">Contacto</a>
-                <a href="#" class="text-white">Términos y Condiciones</a>
-            </p>
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <h5 class="fw-bold text-dark mb-3">Ruber<span style="color: var(--accent-color);">.</span></h5>
+                    <p class="small mb-4">Descubre los mejores destinos, planifica rutas inteligentes y vive experiencias inolvidables en Perú.</p>
+                    
+                    <div class="mb-4">
+                        <a href="#" class="text-secondary me-3 fs-5"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="text-secondary me-3 fs-5"><i class="fab fa-facebook"></i></a>
+                        <a href="#" class="text-secondary fs-5"><i class="fab fa-twitter"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="small text-muted">
+                &copy; 2025 Ruber App. Todos los derechos reservados.
+            </div>
         </div>
     </footer>
 
-    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- Custom JS -->
     <script src="{% static 'core/js/main.js' %}"></script>
-    
     {% block extra_js %}{% endblock %}
 </body>
 </html>

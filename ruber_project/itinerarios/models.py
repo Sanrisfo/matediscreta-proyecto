@@ -1,6 +1,8 @@
 from django.db import models
 from usuarios.models import Turista
 from lugares.models import Destino
+from datetime import datetime
+from decimal import Decimal
 
 class Itinerario(models.Model):
     """
@@ -41,10 +43,39 @@ class Itinerario(models.Model):
     
     def calcular_totales(self):
         """
-        TODO: Implementar cálculo de costos, tiempo y distancia total
-        Debe recorrer todos los items del itinerario y sumar
+        Calcula y actualiza los totales del itinerario:
+        - costo_total: suma de costos de entrada de todos los destinos
+        - tiempo_total_minutos: suma de duraciones de todas las actividades
+        - distancia_total_km: estimación basada en número de destinos
         """
-        pass
+        items = self.items.all().select_related('destino')
+        
+        costo_total = Decimal('0.00')
+        tiempo_total = 0
+        destinos_unicos = set()
+        
+        for item in items:
+            # Sumar costo (evitar duplicados de destinos)
+            if item.destino.id not in destinos_unicos:
+                costo_total += item.destino.costo_entrada
+                destinos_unicos.add(item.destino.id)
+            
+            # Calcular duración del item
+            if item.hora_inicio and item.hora_fin:
+                inicio_dt = datetime.combine(datetime.today(), item.hora_inicio)
+                fin_dt = datetime.combine(datetime.today(), item.hora_fin)
+                duracion_minutos = (fin_dt - inicio_dt).seconds / 60
+                tiempo_total += int(duracion_minutos)
+        
+        # Estimar distancia (5km entre cada destino en promedio)
+        num_destinos = len(destinos_unicos)
+        distancia_estimada = Decimal(str((num_destinos - 1) * 5)) if num_destinos > 1 else Decimal('0.00')
+        
+        # Actualizar campos
+        self.costo_total = costo_total
+        self.tiempo_total_minutos = tiempo_total
+        self.distancia_total_km = distancia_estimada
+        self.save(update_fields=['costo_total', 'tiempo_total_minutos', 'distancia_total_km'])
 
 
 class ItemItinerario(models.Model):
