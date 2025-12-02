@@ -1,95 +1,165 @@
 {% extends 'core/base.html' %}
+{% load static %}
 
 {% block content %}
-<!-- Hero Section -->
-<section class="bg-primary text-white py-5">
-    <div class="container text-center">
-        <h1 class="display-4 mb-3">Descubre Tu Próxima Aventura</h1>
-        <p class="lead mb-4">Planifica tu viaje perfecto con itinerarios inteligentes y personalizados</p>
+
+<header class="position-relative w-100" style="min-height: 85vh; display: flex; align-items: center; background: linear-gradient(rgba(0, 119, 182, 0.85), rgba(0, 119, 182, 0.7)), url('https://images.unsplash.com/photo-1526392060635-9d6019884377?ixlib=rb-4.0.3&auto=format&fit=crop&w=1950&q=80') center/cover no-repeat;">
+    <div class="container text-center text-white position-relative" style="z-index: 2;">
         
-        <!-- Barra de búsqueda -->
+        <span class="badge bg-warning text-dark rounded-pill px-3 py-2 mb-3 fw-bold shadow-sm">
+            <i class="fas fa-star me-1"></i> La mejor forma de viajar por Perú
+        </span>
+        
+        <h1 class="display-3 fw-bold mb-3 ls-1">Descubre tu próxima aventura</h1>
+        <p class="lead mb-5 opacity-75 mx-auto" style="max-width: 700px; font-weight: 300;">
+            Planifica rutas inteligentes, descubre tesoros ocultos y vive experiencias inolvidables con nuestra IA.
+        </p>
+        
         <div class="row justify-content-center">
-            <div class="col-md-8">
-                <form method="get" action="{% url 'lugares:lista_destinos' %}" class="input-group input-group-lg">
-                    <input type="text" name="q" class="form-control" placeholder="¿A dónde quieres ir? Ej: playas, museos, gastronomía...">
-                    <button class="btn btn-light" type="submit">
-                        <i class="fas fa-search"></i> Buscar
-                    </button>
-                </form>
-                <p class="text-white-50 mt-2 small">
-                    <i class="fas fa-lightbulb"></i> Prueba: "Quiero un tour de 2 días con museos y comida típica"
+            <div class="col-md-9 col-lg-7">
+                <div class="bg-white p-2 rounded-pill shadow-lg">
+                    <form method="get" action="{% url 'lugares:lista_destinos' %}" class="d-flex w-100">
+                        <input type="text" name="q" class="form-control border-0 rounded-pill px-4 shadow-none" 
+                               placeholder="¿A dónde quieres ir? Ej: Cusco, Playas..." 
+                               style="height: 55px; font-size: 1.1rem;">
+                        
+                        <button class="btn btn-warning rounded-pill px-4 fw-bold ms-2" type="submit" style="min-width: 140px;">
+                            <i class="fas fa-search me-2"></i> Buscar
+                        </button>
+                    </form>
+                </div>
+                <p class="text-white-50 mt-3 small">
+                    <i class="fas fa-lightbulb text-warning me-1"></i> Prueba buscando: "Museos", "Gastronomía" o "Aventura"
                 </p>
             </div>
         </div>
     </div>
-</section>
+    
+    <div class="position-absolute bottom-0 start-0 w-100 overflow-hidden" style="line-height: 0;">
+        <svg viewBox="0 0 1200 120" preserveAspectRatio="none" style="width: 100%; height: 60px; fill: var(--bg-light, #f8f9fa);">
+            <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z"></path>
+        </svg>
+    </div>
+</header>
 
-<!-- Categorías -->
-<section class="py-5">
-    <div class="container">
-        <h2 class="text-center mb-4">Explora por Categorías</h2>
-        <div class="row g-3">
+<section class="py-5" style="background-color: var(--bg-light, #f8f9fa);">
+    <div class="container py-4">
+        <div class="text-center mb-5">
+            <h6 class="text-primary fw-bold text-uppercase ls-2">Explorar</h6>
+            <h2 class="fw-bold">Busca por Categorías</h2>
+        </div>
+
+        <div class="row g-4 justify-content-center">
             {% for categoria in categorias %}
-            <div class="col-md-3 col-sm-6">
-                <a href="{% url 'lugares:lista_destinos' %}?categoria={{ categoria.id }}" class="text-decoration-none">
-                    <div class="card text-center h-100 hover-shadow">
+            <div class="col-6 col-md-3">
+                <a href="{% url 'lugares:lista_destinos' %}?categoria={{ categoria.id }}" class="text-decoration-none text-dark">
+                    <div class="card h-100 border-0 shadow-sm rounded-4 text-center py-4 hover-up transition-all">
                         <div class="card-body">
-                            <i class="{{ categoria.icono|default:'fas fa-map-marker-alt' }} fa-3x text-primary mb-3"></i>
-                            <h5 class="card-title">{{ categoria.nombre }}</h5>
+                            <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3" 
+                                 style="width: 70px; height: 70px; background-color: rgba(0, 119, 182, 0.1); color: var(--primary-color, #0077b6);">
+                                <i class="{{ categoria.icono|default:'fas fa-map-marker-alt' }} fa-2x"></i>
+                            </div>
+                            <h5 class="card-title fw-bold mb-0">{{ categoria.nombre }}</h5>
                         </div>
                     </div>
                 </a>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center text-muted">
+                No hay categorías disponibles por el momento.
             </div>
             {% endfor %}
         </div>
     </div>
 </section>
 
-<!-- Destinos Destacados -->
-<section class="py-5 bg-light">
-    <div class="container">
-        <h2 class="text-center mb-4">Destinos Destacados</h2>
+<section class="py-5 bg-white">
+    <div class="container py-4">
+        <div class="d-flex justify-content-between align-items-end mb-5">
+            <div>
+                <h6 class="text-warning fw-bold text-uppercase ls-2">Top Viajes</h6>
+                <h2 class="fw-bold mb-0">Destinos Destacados</h2>
+            </div>
+            <a href="{% url 'lugares:lista_destinos' %}" class="btn btn-outline-primary rounded-pill px-4 fw-bold">
+                Ver todos <i class="fas fa-arrow-right ms-2"></i>
+            </a>
+        </div>
+
         <div class="row g-4">
             {% for destino in destinos_destacados %}
             <div class="col-md-4">
-                <div class="card h-100 shadow-sm">
-                    {% if destino.imagen_principal %}
-                    <img src="{{ destino.imagen_principal }}" class="card-img-top" alt="{{ destino.nombre }}" style="height: 200px; object-fit: cover;">
-                    {% else %}
-                    <div class="bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 200px;">
-                        <i class="fas fa-image fa-3x"></i>
+                <div class="card h-100 border-0 shadow rounded-4 overflow-hidden hover-up transition-all">
+                    <div class="position-relative">
+                        {% if destino.imagen_principal %}
+                            <img src="{{ destino.imagen_principal }}" class="card-img-top" alt="{{ destino.nombre }}" style="height: 240px; object-fit: cover;">
+                        {% else %}
+                            <div class="bg-secondary bg-opacity-10 d-flex align-items-center justify-content-center" style="height: 240px;">
+                                <i class="fas fa-image fa-3x text-muted"></i>
+                            </div>
+                        {% endif %}
+                        
+                        <span class="position-absolute top-0 end-0 m-3 badge bg-white text-primary shadow-sm rounded-pill px-3 py-2">
+                            {{ destino.categoria.nombre }}
+                        </span>
                     </div>
-                    {% endif %}
-                    <div class="card-body">
-                        <h5 class="card-title">{{ destino.nombre }}</h5>
-                        <p class="card-text">{{ destino.descripcion|truncatewords:15 }}</p>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="badge bg-primary">{{ destino.categoria.nombre }}</span>
-                            <span class="text-warning">
-                                <i class="fas fa-star"></i> {{ destino.calificacion }}
-                            </span>
+
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="card-title fw-bold mb-0">{{ destino.nombre }}</h5>
+                            <div class="text-warning small">
+                                <i class="fas fa-star"></i> {{ destino.calificacion|default:"4.5" }}
+                            </div>
                         </div>
-                        <a href="{% url 'lugares:detalle_destino' destino.id %}" class="btn btn-outline-primary btn-sm mt-2 w-100">
+                        
+                        <p class="card-text text-muted small mb-4">
+                            {{ destino.descripcion|truncatewords:12 }}
+                        </p>
+                        
+                        <a href="{% url 'lugares:detalle_destino' destino.id %}" class="btn btn-primary rounded-pill w-100 fw-bold">
                             Ver Detalles
                         </a>
                     </div>
                 </div>
             </div>
+            {% empty %}
+            <div class="col-12 text-center py-5">
+                <p class="text-muted">Aún no hay destinos destacados cargados.</p>
+            </div>
             {% endfor %}
         </div>
     </div>
 </section>
 
-<!-- CTA Section -->
 {% if not user.is_authenticated %}
-<section class="py-5 bg-primary text-white text-center">
-    <div class="container">
-        <h2 class="mb-3">¿Listo para tu aventura?</h2>
-        <p class="lead mb-4">Regístrate y genera tu itinerario personalizado en minutos</p>
-        <a href="{% url 'usuarios:registro' %}" class="btn btn-light btn-lg">
-            Comenzar Ahora <i class="fas fa-arrow-right"></i>
-        </a>
+<section class="py-5 bg-white">
+    <div class="container pb-5">
+        <div class="bg-primary rounded-5 p-5 text-center text-white position-relative overflow-hidden shadow-lg mx-auto" style="max-width: 900px;">
+            <div class="position-relative z-1">
+                <h2 class="fw-bold mb-3">¿Listo para comenzar tu viaje?</h2>
+                <p class="lead mb-4 opacity-75">Regístrate gratis y crea itinerarios personalizados en segundos.</p>
+                <a href="{% url 'usuarios:registro' %}" class="btn btn-warning btn-lg rounded-pill px-5 fw-bold text-dark shadow">
+                    Crear Cuenta Gratis
+                </a>
+            </div>
+            
+            <div class="position-absolute top-0 start-0 bg-white opacity-10 rounded-circle" style="width: 200px; height: 200px; transform: translate(-30%, -30%);"></div>
+            <div class="position-absolute bottom-0 end-0 bg-warning opacity-25 rounded-circle" style="width: 150px; height: 150px; transform: translate(30%, 30%);"></div>
+        </div>
     </div>
 </section>
 {% endif %}
+
+<style>
+    .hover-up {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .hover-up:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.1) !important;
+    }
+    .ls-1 { letter-spacing: 1px; }
+    .ls-2 { letter-spacing: 2px; }
+    .transition-all { transition: all 0.3s ease; }
+</style>
+
 {% endblock %}

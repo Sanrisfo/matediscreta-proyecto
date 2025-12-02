@@ -1,151 +1,174 @@
 {% extends 'core/base.html' %}
+{% load static %}
 
-{% block title %}Destinos - Ruber{% endblock %}
+{% block title %}Explorar Destinos | Ruber{% endblock %}
 
 {% block content %}
 <div class="container py-5">
-    <h1 class="mb-4">Explora Destinos Turísticos</h1>
     
-    <!-- Filtros -->
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-body">
-                    <form method="get" class="row g-3">
-
-                        <div class="col-md-4">
-                            <label class="form-label">Buscar</label>
-                            <input type="text" name="q" class="form-control" placeholder="Nombre o descripción..." value="{{ request.GET.q }}">
-                        </div>
-                        
-                        <div class="col-md-4">
-                            <label class="form-label">Categoría</label>
-                            <select name="categoria" class="form-select">
-                                <option value="">Todas las categorías</option>
-                                {% for cat in categorias %}
-                                <option value="{{ cat.id }}" {% if request.GET.categoria == cat.id|stringformat:"s" %}selected{% endif %}>
-                                    {{ cat.nombre }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-
-                        <div class="col-md-4 d-flex align-items-end">
-                            <button type="submit" class="btn btn-primary w-100">
-                                <i class="fas fa-filter"></i> Filtrar
-                            </button>
-                        </div>
-
-                        <div class="col-md-3">
-                                <label class="form-label">Ordenar por</label>
-                                <select name="orden" class="form-select" id="ordenSelect">
-                                    <option value="nombre" {% if orden_actual == 'nombre' %}selected{% endif %}>
-                                        Alfabético (A-Z)
-                                    </option>
-                                    <option value="calificacion" {% if orden_actual == 'calificacion' %}selected{% endif %}>
-                                        Calificación
-                                    </option>
-                                    <option value="precio" {% if orden_actual == 'precio' %}selected{% endif %}>
-                                        Precio
-                                    </option>
-                                </select>
-                            </div>
-
-                            <!-- Dirección -->
-                            <div class="col-md-2">
-                                <label class="form-label">Dirección</label>
-                                <select name="dir" class="form-select">
-                                    <option value="asc" {% if direccion_actual == 'asc' %}selected{% endif %}>
-                                        <i class="fas fa-sort-amount-up"></i> Ascendente
-                                    </option>
-                                    <option value="desc" {% if direccion_actual == 'desc' %}selected{% endif %}>
-                                        <i class="fas fa-sort-amount-down"></i> Descendente
-                                    </option>
-                                </select>
-                            </div>
-
-                            <!-- Botón aplicar -->
-                            <div class="col-md-1 d-flex align-items-end">
-                                <button type="submit" class="btn btn-primary w-100">
-                                    <i class="fas fa-check"></i>
-                                </button>
-                            </div>
-                        
-                            <!--PREFERENCIAS DEL USUARIO-->
-                            <div class="col-md-4 d-flex align-items-end">
-                            
-                            {% if request.user.is_authenticated %}
-                                
-                                {% if request.GET.preferencia == 'true' %}
-                                    {% with query_string=request.GET.urlencode|cut:'&preferencia=true'|cut:'preferencia=true' %}
-                                    <a href="?{{ query_string }}" class="btn btn-warning w-100">
-                                        <i class="fas fa-heart-broken"></i> Quitar Preferencias
-                                    </a>
-                                    {% endwith %}
-                                {% else %}
-                                    {% with query_string=request.GET.urlencode %}
-                                    <a href="?{{ query_string|default:"" }}&preferencia=true" 
-                                    class="btn btn-success w-100">
-                                        <i class="fas fa-heart"></i> Filtrar por mis Preferencias
-                                    </a>
-                                    {% endwith %}
-                                {% endif %}
-
-                            {% else %}
-                                <a href="{% url 'usuarios:login' %}" class="btn btn-outline-secondary w-100 disabled">
-                                    <i class="fas fa-lock"></i> Inicia sesión para usar tus preferencias
-                                </a>
-                            {% endif %}
-                        </div>
-
-                        
-                    </form>
-                    
-                </div>
-            </div>
-        </div>
+    <div class="text-center mb-5">
+        <h6 class="text-primary fw-bold text-uppercase ls-2">Catálogo</h6>
+        <h1 class="fw-bold display-5">Explora nuestros Destinos</h1>
+        <p class="text-muted lead">Encuentra el lugar perfecto para tu próxima aventura en Perú.</p>
     </div>
     
-    <!-- Lista de Destinos -->
+    <div class="bg-white p-4 rounded-4 shadow-sm mb-5 border">
+        <form method="get" class="row g-3 align-items-end">
+            
+            <div class="col-lg-4 col-md-6">
+                <label class="form-label small text-muted fw-bold ms-2">Buscar</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-0 rounded-start-pill ps-3 text-primary">
+                        <i class="fas fa-search"></i>
+                    </span>
+                    <input type="text" name="q" class="form-control bg-light border-0 rounded-end-pill py-2" 
+                           placeholder="Nombre, lugar, experiencia..." value="{{ request.GET.q }}">
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <label class="form-label small text-muted fw-bold ms-2">Categoría</label>
+                <select name="categoria" class="form-select bg-light border-0 rounded-pill py-2">
+                    <option value="">Todas las categorías</option>
+                    {% for cat in categorias %}
+                    <option value="{{ cat.id }}" {% if request.GET.categoria == cat.id|stringformat:"s" %}selected{% endif %}>
+                        {{ cat.nombre }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-lg-3 col-md-6">
+                <label class="form-label small text-muted fw-bold ms-2">Ordenar por</label>
+                <div class="input-group">
+                    <select name="orden" class="form-select bg-light border-0 rounded-start-pill py-2">
+                        <option value="nombre" {% if orden_actual == 'nombre' %}selected{% endif %}>Alfabético</option>
+                        <option value="calificacion" {% if orden_actual == 'calificacion' %}selected{% endif %}>Calificación</option>
+                        <option value="precio" {% if orden_actual == 'precio' %}selected{% endif %}>Precio</option>
+                    </select>
+                    <select name="dir" class="form-select bg-light border-0 border-start rounded-end-pill py-2" style="max-width: 80px;">
+                        <option value="asc" {% if direccion_actual == 'asc' %}selected{% endif %}>Asc</option>
+                        <option value="desc" {% if direccion_actual == 'desc' %}selected{% endif %}>Desc</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-lg-2 col-md-6">
+                <button type="submit" class="btn btn-primary w-100 rounded-pill py-2 fw-bold shadow-sm">
+                    Filtrar
+                </button>
+            </div>
+
+            <div class="col-12 mt-3 border-top pt-3">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <span class="small text-muted"><i class="fas fa-info-circle me-1"></i> Usa los filtros para refinar tu búsqueda.</span>
+                    
+                    <div class="div-preferencias" style="min-width: 250px;">
+                        {% if request.user.is_authenticated %}
+                            {% if request.GET.preferencia == 'true' %}
+                                {% with query_string=request.GET.urlencode|cut:'&preferencia=true'|cut:'preferencia=true' %}
+                                <a href="?{{ query_string }}" class="btn btn-warning btn-sm rounded-pill px-3 fw-bold w-100">
+                                    <i class="fas fa-times me-1"></i> Quitar Mis Preferencias
+                                </a>
+                                {% endwith %}
+                            {% else %}
+                                {% with query_string=request.GET.urlencode %}
+                                <a href="?{{ query_string|default:"" }}&preferencia=true" class="btn btn-outline-success btn-sm rounded-pill px-3 fw-bold w-100">
+                                    <i class="fas fa-magic me-1"></i> Filtrar por mis gustos
+                                </a>
+                                {% endwith %}
+                            {% endif %}
+                        {% else %}
+                            <span class="badge bg-light text-muted border p-2 rounded-pill fw-normal">
+                                <i class="fas fa-lock me-1"></i> Inicia sesión para filtrar por gustos
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+    
     <div class="row g-4">
         {% for destino in destinos %}
-        <div class="col-md-4">
-            <div class="card h-100 shadow-sm">
-                {% if destino.imagen_principal %}
-                <img src="{{ destino.imagen_principal}}" class="card-img-top" alt="{{ destino.nombre }}" style="height: 200px; object-fit: cover;">
-                {% else %}
-                <div class="bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 200px;">
-                    <i class="fas fa-image fa-3x"></i>
+        <div class="col-lg-4 col-md-6">
+            <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden hover-up transition-all">
+                
+                <div class="position-relative">
+                    {% if destino.imagen_principal %}
+                        <img src="{{ destino.imagen_principal }}" class="card-img-top" alt="{{ destino.nombre }}" 
+                             style="height: 220px; object-fit: cover;">
+                    {% else %}
+                        <div class="bg-light d-flex align-items-center justify-content-center text-muted" style="height: 220px;">
+                            <i class="fas fa-image fa-3x opacity-25"></i>
+                        </div>
+                    {% endif %}
+                    
+                    <span class="position-absolute top-0 end-0 m-3 badge bg-white text-primary shadow-sm rounded-pill px-3 py-2 fw-bold">
+                        {{ destino.categoria.nombre }}
+                    </span>
+                    
+                    <span class="position-absolute bottom-0 start-0 m-3 badge bg-dark bg-opacity-75 text-white rounded-pill px-3 py-1 backdrop-blur">
+                        S/ {{ destino.costo_entrada|floatformat:0 }}
+                    </span>
                 </div>
-                {% endif %}
-                <div class="card-body">
-                    <h5 class="card-title">{{ destino.nombre }}</h5>
-                    <p class="card-text">{{ destino.descripcion|truncatewords:20 }}</p>
-                    <div class="mb-2">
-                        <span class="badge bg-info">{{ destino.categoria.nombre }}</span>
-                        <span class="badge bg-success">S/ {{ destino.costo_entrada }}</span>
-                    </div>
-                    <div class="d-flex justify-content-between">
-                        <span class="text-warning">
+
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title fw-bold mb-0 text-dark">{{ destino.nombre }}</h5>
+                        <div class="text-warning small fw-bold">
                             <i class="fas fa-star"></i> {{ destino.calificacion }}
-                        </span>
-                        <span class="text-muted">
-                            <i class="fas fa-clock"></i> {{ destino.tiempo_visita_estimado }} min
-                        </span>
+                        </div>
                     </div>
-                </div>
-                <div class="card-footer bg-white">
-                    <a href="{% url 'lugares:detalle_destino' destino.id %}" class="btn btn-primary btn-sm w-100">
-                        Ver Detalles <i class="fas fa-arrow-right"></i>
+                    
+                    <p class="card-text text-muted small mb-3">
+                        {{ destino.descripcion|truncatewords:18 }}
+                    </p>
+                    
+                    <div class="d-flex align-items-center text-muted small mb-4">
+                        <div class="me-3">
+                            <i class="far fa-clock text-primary me-1"></i> {{ destino.tiempo_visita_estimado }} min
+                        </div>
+                        <div>
+                            <i class="fas fa-walking text-primary me-1"></i> Visita libre
+                        </div>
+                    </div>
+
+                    <a href="{% url 'lugares:detalle_destino' destino.id %}" class="btn btn-outline-primary rounded-pill w-100 fw-bold">
+                        Ver Detalles
                     </a>
                 </div>
             </div>
         </div>
         {% empty %}
-        <div class="col-12 text-center">
-            <p class="lead text-muted">No se encontraron destinos con los filtros seleccionados.</p>
+        <div class="col-12 text-center py-5">
+            <div class="mb-3 text-muted opacity-50">
+                <i class="fas fa-map-signs fa-4x"></i>
+            </div>
+            <h4 class="fw-bold text-muted">No encontramos destinos</h4>
+            <p class="text-muted">Intenta ajustar los filtros o buscar con otros términos.</p>
+            <a href="{% url 'lugares:lista_destinos' %}" class="btn btn-primary rounded-pill px-4 mt-2">
+                Ver todos los destinos
+            </a>
         </div>
         {% endfor %}
     </div>
 </div>
+
+<style>
+    /* Estilos específicos para esta página */
+    .hover-up {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .hover-up:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
+    }
+    .ls-2 { letter-spacing: 2px; }
+    .backdrop-blur { backdrop-filter: blur(5px); }
+    
+    /* Input groups más bonitos */
+    .input-group-text { color: var(--primary-color); }
+</style>
+
 {% endblock %}

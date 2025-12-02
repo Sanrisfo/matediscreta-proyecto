@@ -1,157 +1,225 @@
 /* ============================================
-   ESTILOS PERSONALIZADOS - RUBER
+   RUBER - ESTILO TURÍSTICO MINIMALISTA
    ============================================ */
 
-/* Variables */
+/* Importamos fuente moderna (Poppins) */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
 :root {
-    --primary-color: #667eea;
-    --secondary-color: #764ba2;
-    --success-color: #48bb78;
-    --danger-color: #f56565;
-    --warning-color: #ed8936;
-    --info-color: #4299e1;
-    --light-color: #f7fafc;
-    --dark-color: #2d3748;
+    /* --- PALETA DE COLORES TURISMO --- */
+    /* Azul Océano (Confianza, Calma) */
+    --primary-color: #0077b6;
+    --primary-hover: #023e8a;
+
+    /* Amarillo Sol (Alegría, Acento) */
+    --accent-color: #ffb703;
+    --accent-hover: #fb8500;
+
+    /* Neutros (Minimalismo) */
+    --text-dark: #2b2d42;       /* Casi negro, más suave para leer */
+    --text-light: #8d99ae;      /* Gris para subtítulos */
+    --bg-light: #f8f9fa;        /* Fondo general */
+    --white: #ffffff;
 }
 
-/* General */
+/* ============================================
+   1. GENERAL Y TIPOGRAFÍA
+   ============================================ */
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f8f9fa;
+    font-family: 'Poppins', sans-serif;
+    background-color: var(--bg-light);
+    color: var(--text-dark);
+    line-height: 1.6;
 }
 
-/* Navbar */
+.text-white h1, 
+.text-white h2, 
+.text-white h3, 
+.text-white h4, 
+.text-white h5, 
+.text-white h6 {
+    color: #ffffff !important;
+}
+
+/* Y para asegurarnos que los enlaces dentro del hero también sean blancos */
+.text-white a:not(.btn) {
+    color: #ffffff !important;
+    text-decoration: underline;
+}
+
+a {
+    text-decoration: none;
+    color: var(--primary-color);
+}
+
+/* ============================================
+   2. NAVBAR (Blanca y Limpia)
+   ============================================ */
+.navbar {
+    background-color: var(--white) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); /* Sombra muy suave */
+    padding: 1rem 0;
+}
+
 .navbar-brand {
-    font-weight: bold;
+    font-weight: 700;
     font-size: 1.5rem;
+    color: var(--primary-color) !important;
+    letter-spacing: -0.5px;
 }
 
-.navbar-dark .navbar-nav .nav-link {
-    color: rgba(255, 255, 255, 0.9);
-    transition: color 0.3s ease;
+.navbar-brand span {
+    color: var(--accent-color); /* El toque amarillo en el logo */
 }
 
-.navbar-dark .navbar-nav .nav-link:hover {
-    color: white;
+/* Enlaces del menú */
+.navbar-nav .nav-link {
+    color: var(--text-dark) !important;
+    font-weight: 500;
+    margin-left: 15px;
+    position: relative;
+    transition: color 0.3s;
 }
 
-/* Cards */
-.card {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+.navbar-nav .nav-link:hover {
+    color: var(--primary-color) !important;
+}
+
+/* Efecto de línea amarilla debajo al pasar el mouse */
+.navbar-nav .nav-link::after {
+    content: '';
+    display: block;
+    width: 0;
+    height: 3px;
+    background: var(--accent-color);
+    transition: width .3s;
+    border-radius: 2px;
+}
+.navbar-nav .nav-link:hover::after {
+    width: 100%;
+}
+
+/* ============================================
+   3. BOTONES Y ELEMENTOS DE ACCIÓN
+   ============================================ */
+.btn {
+    border-radius: 50px; /* Botones redondos son más amigables */
+    padding: 0.6rem 1.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
     border: none;
 }
 
-.hover-shadow:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+/* Botón Principal (Azul) */
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+.btn-primary:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 119, 182, 0.3);
+}
+
+/* Botón Secundario/Acento (Amarillo) */
+.btn-success, .btn-accent {
+    background-color: var(--accent-color);
+    color: var(--text-dark); /* Texto oscuro sobre amarillo */
+}
+.btn-success:hover, .btn-accent:hover {
+    background-color: var(--accent-hover);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 183, 3, 0.4);
+}
+
+/* ============================================
+   4. TARJETAS (CARDS) - Estilo "Flotante"
+   ============================================ */
+.card {
+    background: var(--white);
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05); /* Sombra difusa */
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    overflow: hidden;
+}
+
+.card:hover {
+    transform: translateY(-8px); /* Sube un poco más */
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
 }
 
 .card-img-top {
+    height: 220px;
     object-fit: cover;
-    height: 200px;
+    transition: transform 0.5s ease;
 }
 
-/* Badges */
-.badge {
-    font-weight: 500;
-    padding: 0.4rem 0.8rem;
+.card:hover .card-img-top {
+    transform: scale(1.05); /* Efecto zoom suave en la imagen */
 }
 
-/* Buttons */
-.btn {
-    border-radius: 6px;
-    padding: 0.5rem 1.2rem;
-    font-weight: 500;
-    transition: all 0.3s ease;
+.card-body {
+    padding: 1.5rem;
 }
 
-.btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+.card-title {
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
 }
 
-/* Hero Section */
-.bg-primary {
-    background: linear-gradient(135deg, #667eea 0%, #667eea 100%) !important;
+/* ============================================
+   5. COMPONENTES ESPECÍFICOS DEL PROYECTO
+   ============================================ */
+
+/* Panel Lateral del Mapa */
+#panel-lateral {
+    background: var(--white);
+    box-shadow: 2px 0 10px rgba(0,0,0,0.05);
 }
 
-.bg-gradient {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+/* Selectores de formulario más limpios */
+.form-control, .form-select {
+    border-radius: 10px;
+    border: 1px solid #e0e0e0;
+    padding: 0.8rem;
+    background-color: #fafafa;
 }
 
-/* Timeline (para itinerarios) */
-.timeline {
-    position: relative;
-    padding-left: 0;
+.form-control:focus, .form-select:focus {
+    background-color: #fff;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(0, 119, 182, 0.1);
 }
 
-.timeline .card {
-    margin-bottom: 1rem;
+/* Loading Spinner */
+.spinner-border {
+    color: var(--accent-color);
 }
 
-/* Formularios */
-.form-control:focus,
-.form-select:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-}
-
-/* Footer */
-footer a {
-    text-decoration: none;
-    transition: opacity 0.3s ease;
-}
-
-footer a:hover {
-    opacity: 0.8;
-}
-
-/* Ratings */
-.text-warning {
-    color: #ffc107 !important;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .card-img-top {
-        height: 150px;
-    }
-    
-    #map {
-        height: 400px !important;
-    }
-}
-
-/* Loading spinner */
-.spinner-border-sm {
-    width: 1rem;
-    height: 1rem;
-}
-
-/* Alert custom */
+/* Alertas más suaves */
 .alert {
-    border-left: 4px solid;
+    border-radius: 10px;
+    border: none;
+    border-left: 5px solid;
 }
-
-.alert-info {
-    border-left-color: #4299e1;
-}
-
-.alert-success {
-    border-left-color: #48bb78;
-}
-
-.alert-warning {
-    border-left-color: #ed8936;
-}
-
 .alert-danger {
-    border-left-color: #f56565;
+    background-color: #fff5f5;
+    color: #c53030;
+    border-color: #f56565;
+}
+.alert-success {
+    background-color: #f0fff4;
+    color: #276749;
+    border-color: #48bb78;
 }
 
-/* Custom scrollbar */
+/* ============================================
+   6. SCROLLBAR (Barra de desplazamiento)
+   ============================================ */
 ::-webkit-scrollbar {
-    width: 10px;
+    width: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -159,10 +227,22 @@ footer a:hover {
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 5px;
+    background: #cbd5e0;
+    border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #555;
+    background: var(--primary-color); /* Se pone azul al agarrarla */
+}
+
+/* ============================================
+   7. RESPONSIVE
+   ============================================ */
+@media (max-width: 768px) {
+    .navbar-brand {
+        font-size: 1.2rem;
+    }
+    #map {
+        height: 50vh !important; /* Mapa más pequeño en celular */
+    }
 }

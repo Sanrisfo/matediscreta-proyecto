@@ -3,43 +3,169 @@
 
 {% block title %}Generar Itinerario - Ruber{% endblock %}
 
+{% block extra_head %}
+<style>
+.feature-box {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+
+.feature-box i {
+    margin-right: 10px;
+}
+
+.info-card {
+    background: #f8f9fa;
+    border-left: 4px solid #667eea;
+    padding: 15px;
+    border-radius: 5px;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container py-5">
     <div class="row">
         <div class="col-md-8 mx-auto">
-            <div class="card shadow">
-                <div class="card-header bg-success text-white">
-                    <h3 class="mb-0"><i class="fas fa-magic"></i> Generar Itinerario Automático</h3>
+            <div class="card shadow-lg">
+                <div class="card-header text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <h3 class="mb-0">
+                        <i class="fas fa-magic"></i> Generar Itinerario Automático
+                    </h3>
+                    <p class="mb-0 mt-2 opacity-75">Powered by Matemática Discreta 🧮</p>
                 </div>
                 <div class="card-body">
                     <div class="alert alert-info">
                         <i class="fas fa-info-circle"></i> 
-                        Completa tus preferencias y nuestro algoritmo generará el mejor itinerario para ti.
+                        Completa tus preferencias y nuestro algoritmo generará el mejor itinerario para ti 
+                        usando <strong>teoría de conjuntos, combinatoria y optimización</strong>.
                     </div>
                     
                     <form method="post">
                         {% csrf_token %}
-                        {{ form|crispy }}
                         
-                        <div class="alert alert-warning mt-3">
-                            <strong>Nota:</strong> El algoritmo considerará:
-                            <ul class="mb-0 mt-2">
-                                <li>Rutas óptimas entre destinos (Dijkstra)</li>
-                                <li>Combinaciones de actividades según tus gustos</li>
-                                <li>Restricciones de tiempo y presupuesto</li>
-                                <li>Calificaciones de destinos</li>
-                            </ul>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.fecha_inicio.id_for_label }}" class="form-label">
+                                        <i class="fas fa-calendar-alt text-primary"></i> Fecha de inicio *
+                                    </label>
+                                    <input type="date" name="{{ form.fecha_inicio.name }}" 
+                                           class="form-control" id="{{ form.fecha_inicio.id_for_label }}" 
+                                           required>
+                                    {% if form.fecha_inicio.errors %}
+                                        <div class="text-danger small">{{ form.fecha_inicio.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.fecha_fin.id_for_label }}" class="form-label">
+                                        <i class="fas fa-calendar-check text-success"></i> Fecha de fin *
+                                    </label>
+                                    <input type="date" name="{{ form.fecha_fin.name }}" 
+                                           class="form-control" id="{{ form.fecha_fin.id_for_label }}" 
+                                           required>
+                                    {% if form.fecha_fin.errors %}
+                                        <div class="text-danger small">{{ form.fecha_fin.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-heart text-danger"></i> Preferencias de viaje *
+                            </label>
+                            <div class="row">
+                                {% for choice in form.preferencias %}
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <label class="form-check-label">
+                                            {{ choice.tag }}
+                                            {{ choice.choice_label }}
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% if form.preferencias.errors %}
+                                <div class="text-danger small">{{ form.preferencias.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.presupuesto_max.id_for_label }}" class="form-label">
+                                <i class="fas fa-wallet text-warning"></i> Presupuesto máximo (S/)
+                            </label>
+                            <input type="number" step="0.01" name="{{ form.presupuesto_max.name }}" 
+                                   class="form-control" id="{{ form.presupuesto_max.id_for_label }}" 
+                                   placeholder="Ejemplo: 500.00">
+                            <small class="form-text text-muted">Opcional: Deja en blanco para sin límite</small>
+                            {% if form.presupuesto_max.errors %}
+                                <div class="text-danger small">{{ form.presupuesto_max.errors }}</div>
+                            {% endif %}
                         </div>
                         
-                        <div class="text-end">
-                            <a href="{% url 'itinerarios:mis_itinerarios' %}" class="btn btn-secondary">
+                        <div class="info-card mb-4">
+                            <h5 class="mb-3"><i class="fas fa-robot"></i> El algoritmo considerará:</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="feature-box">
+                                        <i class="fas fa-project-diagram"></i>
+                                        <strong>Teoría de Conjuntos</strong>
+                                        <br><small>Intersección de preferencias</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="feature-box">
+                                        <i class="fas fa-route"></i>
+                                        <strong>Algoritmo de Dijkstra</strong>
+                                        <br><small>Rutas óptimas entre destinos</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="feature-box">
+                                        <i class="fas fa-cubes"></i>
+                                        <strong>Combinatoria</strong>
+                                        <br><small>Mejores combinaciones</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="feature-box">
+                                        <i class="fas fa-chart-line"></i>
+                                        <strong>Optimización</strong>
+                                        <br><small>Maximizar satisfacción</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'itinerarios:mis_itinerarios' %}" class="btn btn-secondary btn-lg">
                                 <i class="fas fa-arrow-left"></i> Cancelar
                             </a>
-                            <button type="submit" class="btn btn-success">
+                            <button type="submit" class="btn btn-success btn-lg">
                                 <i class="fas fa-cogs"></i> Generar Itinerario
                             </button>
                         </div>
                     </form>
+                </div>
+            </div>
+
+            <!-- Card informativa -->
+            <div class="card shadow mt-4">
+                <div class="card-body">
+                    <h5><i class="fas fa-lightbulb text-warning"></i> ¿Cómo funciona?</h5>
+                    <ol class="mb-0">
+                        <li>Seleccionamos destinos que coincidan con tus preferencias (Teoría de Conjuntos)</li>
+                        <li>Calculamos la mejor combinación según tu presupuesto y tiempo (Knapsack Problem)</li>
+                        <li>Ordenamos los destinos para minimizar distancias (Grafos & Dijkstra)</li>
+                        <li>Distribuimos las actividades equitativamente por día</li>
+                    </ol>
                 </div>
             </div>
         </div>
