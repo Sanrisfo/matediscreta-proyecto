@@ -39,9 +39,6 @@ class GrafoRecomendaciones:
       
         peso_total = 0.0
         
-        # ===================================
-        # 1. SIMILITUD POR CATEGORÍA (40%)
-        # ===================================
         if destino1.categoria and destino2.categoria:
             if destino1.categoria_id == destino2.categoria_id:
                 peso_categoria = 1.0
@@ -52,14 +49,10 @@ class GrafoRecomendaciones:
         
         peso_total += 0.4 * peso_categoria
         
-        # ===================================
-        # 2. SIMILITUD POR TAGS (40%)
-        # ===================================
         tags1 = set(destino1.tags_preferencias or [])
         tags2 = set(destino2.tags_preferencias or [])
         
         if tags1 and tags2:
-            # Coeficiente de Jaccard: |A ∩ B| / |A ∪ B|
             interseccion = len(tags1 & tags2)
             union = len(tags1 | tags2)
             peso_tags = interseccion / union if union > 0 else 0.0
@@ -68,15 +61,11 @@ class GrafoRecomendaciones:
         
         peso_total += 0.4 * peso_tags
         
-        # ===================================
-        # 3. SIMILITUD POR ACTIVIDADES (20%)
-        # ===================================
         tipos1 = set(act.tipo for act in destino1.actividades.all())
         tipos2 = set(act.tipo for act in destino2.actividades.all())
         
         if tipos1 and tipos2:
 
-            # Coeficiente de Jaccard
             interseccion = len(tipos1 & tipos2)
             union = len(tipos1 | tipos2)
             peso_actividades = interseccion / union if union > 0 else 0.0
@@ -129,10 +118,9 @@ class GrafoRecomendaciones:
 
 def obtener_recomendaciones(destino_actual, n=5):
    
-    grafo = GrafoRecomendaciones() #CONSTRUCTOR
+    grafo = GrafoRecomendaciones() 
     grafo.construir_grafo() #METODO APLICADO SOBRE NUESTRA BASE DE DATOS
     
-    #Variable donde se almacena
     recomendaciones = grafo.recomendar(destino_actual.id, n)
     
     recomendaciones_con_porcentaje = [

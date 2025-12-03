@@ -107,10 +107,15 @@
                     <span class="position-absolute top-0 end-0 m-3 badge bg-white text-primary shadow-sm rounded-pill px-3 py-2 fw-bold">
                         {{ destino.categoria.nombre }}
                     </span>
-                    
+                    {% if destino.costo_entrada > 0 %}
                     <span class="position-absolute bottom-0 start-0 m-3 badge bg-dark bg-opacity-75 text-white rounded-pill px-3 py-1 backdrop-blur">
                         S/ {{ destino.costo_entrada|floatformat:0 }}
                     </span>
+                    {% else %}
+                    <span class="position-absolute bottom-0 start-0 m-3 badge bg-dark bg-opacity-75 text-white rounded-pill px-3 py-1 backdrop-blur">
+                        Libre
+                    </span>
+                    {% endif %}
                 </div>
 
                 <div class="card-body p-4">
@@ -129,9 +134,15 @@
                         <div class="me-3">
                             <i class="far fa-clock text-primary me-1"></i> {{ destino.tiempo_visita_estimado }} min
                         </div>
+                        {% if destino.costo_entrada > 0 %}
+                        <div>
+                            <i class="fas fa-walking text-primary me-1"></i> Visita controlada
+                        </div>
+                        {% else %}
                         <div>
                             <i class="fas fa-walking text-primary me-1"></i> Visita libre
                         </div>
+                        {% endif%}
                     </div>
 
                     <!-- BOTONES DE ACCIÓN -->

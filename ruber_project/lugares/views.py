@@ -68,6 +68,8 @@ def lista_destinos(request):
 
     usar_rb_tree = request.GET.get('usar_rb', 'true') == 'true'
 
+    info_arbol = {'usado': False}
+
     if usar_rb_tree and destinos.exists():
         print(f"\n🌳 Usando Árbol Rojo-Negro para ordenar")
         print(f"   Criterio: {criterio}")
@@ -95,6 +97,9 @@ def lista_destinos(request):
         if destinos.exists():
             print(f"Primer destino: {destinos.first().nombre}")
 
+
+    hay_precios_mayores_a_cero = any(destino.costo_entrada > 0 for destino in destinos) #Esto es lo que puso jeremy que dijismo both changes
+    
     context = {
         'destinos': destinos,
         'categorias': categorias,
@@ -104,6 +109,7 @@ def lista_destinos(request):
         'orden_actual': orden,
         'direccion_actual': direccion,
         'info_arbol': info_arbol,
+        'mostrar_opcion_precio': hay_precios_mayores_a_cero
     }
     return render(request, 'lugares/lista_destinos.html', context)
 
