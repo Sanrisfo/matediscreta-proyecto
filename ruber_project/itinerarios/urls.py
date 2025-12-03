@@ -12,9 +12,10 @@ urlpatterns = [
     path('mis-itinerarios/', views.mis_itinerarios, name='mis_itinerarios'),
     
     # Acciones sobre itinerarios
+    path('<int:itinerario_id>/regenerar/', views.regenerar_actividades, name='regenerar'),
     path('<int:itinerario_id>/duplicar/', views.duplicar_itinerario, name='duplicar'),
+    path('<int:itinerario_id>/eliminar/', views.eliminar_itinerario, name='eliminar'),
     
-    # API endpoints para acciones rápidas
-    path('<int:itinerario_id>/agregar-actividad/', views.agregar_actividad_rapida, name='agregar_actividad'),
+    # Acciones sobre items
     path('item/<int:item_id>/eliminar/', views.eliminar_item, name='eliminar_item'),
 ]

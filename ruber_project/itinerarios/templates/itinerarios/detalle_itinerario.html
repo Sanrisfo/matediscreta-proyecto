@@ -1,406 +1,258 @@
 {% extends 'core/base.html' %}
 {% load static %}
 
-{% block title %}{{ itinerario.nombre }} - Ruber{% endblock %}
-
-{% block extra_head %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<style>
-.timeline-item {
-    border-left: 3px solid #0d6efd;
-    padding-left: 20px;
-    margin-bottom: 20px;
-    position: relative;
-}
-
-.timeline-item::before {
-    content: '';
-    width: 15px;
-    height: 15px;
-    background: #0d6efd;
-    border-radius: 50%;
-    position: absolute;
-    left: -9px;
-    top: 5px;
-}
-
-.stat-card {
-    border-left: 4px solid #0d6efd;
-    transition: transform 0.2s;
-}
-
-.stat-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-}
-
-.day-badge {
-    font-size: 1.2rem;
-    padding: 10px 20px;
-    border-radius: 10px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.chart-container {
-    position: relative;
-    height: 300px;
-    margin-bottom: 30px;
-}
-</style>
-{% endblock %}
+{% block title %}Detalle Itinerario | Ruber{% endblock %}
 
 {% block content %}
 <div class="container py-5">
-    <!-- Header del itinerario -->
-    <div class="card shadow-lg mb-4">
-        <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-            <div class="row align-items-center">
-                <div class="col">
-                    <h3 class="mb-0 text-white">
-                        <i class="fas fa-route text-white"></i> {{ itinerario.nombre }}
-                    </h3>
-                    <small class="text-white" style="opacity: 0.8;">Creado el {{ itinerario.fecha_creacion|date:"d/m/Y" }}</small>
-                </div>
-                <div class="col-auto">
-                    <span class="badge bg-light text-dark fs-6">{{ itinerario.get_estado_display }}</span>
-                </div>
-            </div>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <p><strong><i class="fas fa-calendar text-primary"></i> Fecha:</strong> 
-                        {{ itinerario.fecha_inicio|date:"d/m/Y" }} - {{ itinerario.fecha_fin|date:"d/m/Y" }}
-                    </p>
-                    <p><strong><i class="fas fa-clock text-primary"></i> Duración:</strong> 
-                        {{ itinerario.tiempo_total_minutos }} minutos 
-                        ({{ itinerario.tiempo_total_minutos|floatformat:0|add:"60"|divisibleby:"60"|yesno:"~,~" }}
-                        {% widthratio itinerario.tiempo_total_minutos 60 1 %} horas)
-                    </p>
-                </div>
-                <div class="col-md-6">
-                    <p><strong><i class="fas fa-dollar-sign text-success"></i> Costo Total:</strong> 
-                        S/ {{ itinerario.costo_total }}
-                    </p>
-                    <p><strong><i class="fas fa-map-marked text-danger"></i> Distancia Total:</strong> 
-                        {{ itinerario.distancia_total_km }} km
-                    </p>
-                </div>
-            </div>
-            {% if itinerario.descripcion %}
-            <hr>
-            <p class="mb-0 text-muted">
-                <i class="fas fa-info-circle"></i> {{ itinerario.descripcion }}
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-primary">{{ itinerario.nombre }}</h2>
+            <p class="text-muted mb-0">
+                <i class="fas fa-calendar-alt me-2"></i>{{ itinerario.fecha_inicio }} al {{ itinerario.fecha_fin }}
             </p>
-            {% endif %}
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'itinerarios:regenerar' itinerario.id %}" class="btn btn-warning text-dark fw-bold shadow-sm rounded-pill">
+                <i class="fas fa-random me-2"></i> Regenerar (3 Aleatorias)
+            </a>
+            <a href="{% url 'itinerarios:mis_itinerarios' %}" class="btn btn-outline-secondary rounded-pill">
+                Volver a mis viajes
+            </a>
         </div>
     </div>
 
-    <!-- Dashboard de Estadísticas -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card stat-card shadow">
-                <div class="card-body text-center">
-                    <i class="fas fa-map-marker-alt fa-3x text-primary mb-3"></i>
-                    <h3 class="mb-0">{{ total_destinos }}</h3>
-                    <p class="text-muted mb-0">Destinos</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card stat-card shadow">
-                <div class="card-body text-center">
-                    <i class="fas fa-calendar-day fa-3x text-success mb-3"></i>
-                    <h3 class="mb-0">{{ total_dias }}</h3>
-                    <p class="text-muted mb-0">Días</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card stat-card shadow">
-                <div class="card-body text-center">
-                    <i class="fas fa-list fa-3x text-warning mb-3"></i>
-                    <h3 class="mb-0">{{ items.count }}</h3>
-                    <p class="text-muted mb-0">Actividades</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card stat-card shadow">
-                <div class="card-body text-center">
-                    <i class="fas fa-chart-line fa-3x text-info mb-3"></i>
-                    <h3 class="mb-0">{{ promedio_actividades_dia }}</h3>
-                    <p class="text-muted mb-0">Act./Día</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Gráficos de Visualización -->
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <div class="card shadow">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Actividades por Día</h5>
-                </div>
-                <div class="card-body">
-                    <div class="chart-container">
-                        <canvas id="chartActividades"></canvas>
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+                <div class="card-body d-flex align-items-center p-4">
+                    <div class="bg-success bg-opacity-10 p-3 rounded-circle me-3 text-success">
+                        <i class="fas fa-wallet fa-2x"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted text-uppercase small mb-1 ls-1">Presupuesto Estimado</h6>
+                        <h3 class="fw-bold mb-0 text-dark">S/ {{ itinerario.costo_total|floatformat:0 }}</h3>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="card shadow">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0"><i class="fas fa-chart-line"></i> Distribución de Tiempo</h5>
+        
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+                <div class="card-body d-flex align-items-center p-4">
+                    <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-3 text-primary">
+                        <i class="fas fa-map-marked-alt fa-2x"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted text-uppercase small mb-1 ls-1">Actividades</h6>
+                        <h3 class="fw-bold mb-0 text-dark">{{ total_actividades }}</h3>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <div class="chart-container">
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+                <div class="card-body d-flex align-items-center p-4">
+                    <div class="bg-info bg-opacity-10 p-3 rounded-circle me-3 text-info">
+                        <i class="fas fa-clock fa-2x"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted text-uppercase small mb-1 ls-1">Tiempo Total</h6>
+                        <h3 class="fw-bold mb-0 text-dark">{{ itinerario.tiempo_total_minutos }} <span class="fs-6 text-muted">min</span></h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 py-4 px-4">
+                    <h5 class="fw-bold mb-0 text-dark">
+                        <i class="fas fa-stream me-2 text-primary"></i>Cronograma de Actividades
+                    </h5>
+                </div>
+                <div class="card-body px-4">
+                    {% if items %}
+                        <div class="timeline position-relative">
+                            {% for item in items %}
+                            <div class="d-flex mb-4 position-relative timeline-item">
+                                <div class="me-4 text-center d-flex flex-column align-items-center" style="min-width: 80px;">
+                                    <span class="badge bg-light text-dark border rounded-pill mb-1 px-3">Día {{ item.dia }}</span>
+                                    <div class="fw-bold text-primary">{{ item.hora_inicio|time:"H:i" }}</div>
+                                    <div class="small text-muted">{{ item.hora_fin|time:"H:i" }}</div>
+                                    {% if not forloop.last %}
+                                    <div class="position-absolute bg-light" style="width: 2px; height: 100%; top: 40px; left: 40px; z-index: 0;"></div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="card border-0 bg-light rounded-4 w-100 p-3 hover-up transition-all" style="z-index: 1;">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="fw-bold mb-1 text-dark">{{ item.destino.nombre }}</h6>
+                                            <p class="text-primary small mb-2 fw-medium">
+                                                <i class="fas fa-check-circle me-1"></i> {{ item.notas }}
+                                            </p>
+                                        </div>
+                                        <span class="badge bg-white text-success shadow-sm border">
+                                            S/ {{ item.destino.costo_entrada|floatformat:0 }}
+                                        </span>
+                                    </div>
+                                    <div class="d-flex gap-3 small text-muted mt-2 border-top pt-2">
+                                        <span><i class="fas fa-map-marker-alt me-1"></i> {{ item.destino.categoria.nombre }}</span>
+                                        <span><i class="fas fa-stopwatch me-1"></i> 90 min</span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <div class="mb-3 opacity-25">
+                                <i class="fas fa-clipboard-list fa-4x text-muted"></i>
+                            </div>
+                            <h5 class="text-muted">Tu itinerario está vacío</h5>
+                            <p class="small text-muted mb-4">Genera nuevas actividades para ver tu plan.</p>
+                            <a href="{% url 'itinerarios:regenerar' itinerario.id %}" class="btn btn-primary rounded-pill">
+                                Generar Actividades
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-header bg-white border-0 py-3 px-4">
+                    <h6 class="fw-bold mb-0">Distribución de Costos por Día</h6>
+                </div>
+                <div class="card-body px-4 pb-4">
+                    <div style="height: 250px;">
+                        <canvas id="chartCostos"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-white border-0 py-3 px-4">
+                    <h6 class="fw-bold mb-0">Tiempo de Actividad (min)</h6>
+                </div>
+                <div class="card-body px-4 pb-4">
+                    <div style="height: 200px;">
                         <canvas id="chartTiempo"></canvas>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card shadow">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0"><i class="fas fa-money-bill-wave"></i> Distribución de Costos</h5>
-                </div>
-                <div class="card-body">
-                    <div class="chart-container">
-                        <canvas id="chartCostos"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Timeline de destinos -->
-    <div class="card shadow-lg">
-        <div class="card-header bg-light">
-            <h4 class="mb-0"><i class="fas fa-route"></i> Cronograma del Viaje</h4>
-        </div>
-        <div class="card-body">
-            {% if items %}
-            {% regroup items by dia as items_por_dia_list %}
-            {% for dia_group in items_por_dia_list %}
-            <div class="mb-5">
-                <h5 class="mb-4">
-                    <span class="day-badge text-white">
-                        <i class="fas fa-calendar-day"></i> Día {{ dia_group.grouper }}
-                    </span>
-                </h5>
-                
-                {% for item in dia_group.list %}
-                <div class="timeline-item">
-                    <div class="card mb-3 border-0 shadow-sm">
-                        <div class="card-body">
-                            <div class="row align-items-center">
-                                <div class="col-md-8">
-                                    <div class="d-flex align-items-center mb-2">
-                                        <span class="badge bg-primary me-3" style="font-size: 1rem;">
-                                            {{ item.orden }}
-                                        </span>
-                                        <h5 class="card-title mb-0">{{ item.destino.nombre }}</h5>
-                                    </div>
-                                    
-                                    {% if item.destino.categoria %}
-                                    <span class="badge bg-secondary mb-2">
-                                        <i class="fas fa-tag"></i> {{ item.destino.categoria.nombre }}
-                                    </span>
-                                    {% endif %}
-                                    
-                                    <p class="card-text text-muted">
-                                        {{ item.destino.descripcion|truncatewords:30 }}
-                                    </p>
-                                    
-                                    {% if item.notas %}
-                                    <div class="alert alert-info mb-2" style="font-size: 0.9rem;">
-                                        <i class="fas fa-sticky-note"></i> {{ item.notas|linebreaks }}
-                                    </div>
-                                    {% endif %}
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="text-end">
-                                        <p class="mb-2">
-                                            <strong><i class="fas fa-clock text-primary"></i> Horario:</strong>
-                                        </p>
-                                        <p class="text-primary fs-5 mb-3">
-                                            {{ item.hora_inicio|time:"H:i" }} - {{ item.hora_fin|time:"H:i" }}
-                                        </p>
-                                        <p class="mb-3">
-                                            <strong><i class="fas fa-dollar-sign text-success"></i> Entrada:</strong>
-                                            <span class="fs-5">S/ {{ item.destino.costo_entrada }}</span>
-                                        </p>
-                                        <div class="btn-group" role="group">
-                                            <a href="{% url 'lugares:detalle_destino' item.destino.id %}" 
-                                               class="btn btn-sm btn-outline-primary">
-                                                <i class="fas fa-eye"></i> Ver
-                                            </a>
-                                            <form method="post" action="{% url 'itinerarios:eliminar_item' item.id %}" 
-                                                  style="display: inline;" 
-                                                  onsubmit="return confirm('¿Eliminar esta actividad del itinerario?');">
-                                                {% csrf_token %}
-                                                <button type="submit" class="btn btn-sm btn-outline-danger">
-                                                    <i class="fas fa-trash"></i> Eliminar
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-            {% endfor %}
-            {% else %}
-            <div class="alert alert-warning text-center">
-                <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
-                <h5>Este itinerario aún no tiene destinos asignados</h5>
-                <p>Puedes generar un nuevo itinerario o agregar actividades manualmente.</p>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-    
-    <!-- Acciones -->
-    <div class="text-center mt-4">
-        <a href="{% url 'itinerarios:mis_itinerarios' %}" class="btn btn-secondary btn-lg">
-            <i class="fas fa-arrow-left"></i> Volver a mis itinerarios
-        </a>
-        
-        <a href="{% url 'itinerarios:duplicar' itinerario.id %}" class="btn btn-info btn-lg">
-            <i class="fas fa-copy"></i> Duplicar Itinerario
-        </a>
-        
-        {% if items %}
-        {% if not itinerario.ticket %}
-        <a href="{% url 'tickets:generar' itinerario.id %}" class="btn btn-success btn-lg">
-            <i class="fas fa-ticket-alt"></i> Generar Ticket
-        </a>
-        {% else %}
-        <a href="{% url 'tickets:detalle' itinerario.ticket.id %}" class="btn btn-warning btn-lg">
-            <i class="fas fa-qrcode"></i> Ver Ticket
-        </a>
-        {% endif %}
-        {% endif %}
-    </div>
 </div>
 
+<style>
+    .ls-1 { letter-spacing: 1px; }
+    .hover-up:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.05) !important; }
+    .transition-all { transition: all 0.3s ease; }
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
 <script>
-// Datos del servidor - parsear JSON
-const datosGrafico = JSON.parse('{{ datos_grafico|escapejs }}');
+    document.addEventListener("DOMContentLoaded", function() {
+        
+        // 1. Obtener y parsear los datos de Django
+        const rawData = '{{ datos_grafico|safe }}';
+        console.log("Datos recibidos:", rawData); // Para depuración
+        
+        let datos = null;
+        try {
+            datos = JSON.parse(rawData);
+        } catch (e) {
+            console.error("Error al leer JSON:", e);
+            return;
+        }
 
-// Configuración de colores
-const colores = {
-    primary: 'rgba(102, 126, 234, 0.8)',
-    success: 'rgba(40, 167, 69, 0.8)',
-    warning: 'rgba(255, 193, 7, 0.8)',
-    info: 'rgba(23, 162, 184, 0.8)',
-};
+        // Validar que existan datos para graficar
+        if (!datos || !datos.dias || datos.dias.length === 0) {
+            console.warn("No hay datos suficientes para los gráficos");
+            return;
+        }
 
-// Gráfico de Actividades por Día
-const ctxActividades = document.getElementById('chartActividades').getContext('2d');
-new Chart(ctxActividades, {
-    type: 'bar',
-    data: {
-        labels: datosGrafico.dias,
-        datasets: [{
-            label: 'Actividades',
-            data: datosGrafico.actividades,
-            backgroundColor: colores.primary,
-            borderColor: 'rgba(102, 126, 234, 1)',
-            borderWidth: 2
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                display: false
-            },
-            title: {
-                display: false
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                ticks: {
-                    stepSize: 1
+        // Configuración común de colores
+        const primaryColor = '#00838F'; // Tu color Cian
+        const secondaryColor = '#FFB703'; // Tu color Amarillo
+
+        // 2. Gráfico de Costos (Barras)
+        const ctxCostos = document.getElementById('chartCostos');
+        if (ctxCostos) {
+            new Chart(ctxCostos, {
+                type: 'bar',
+                data: {
+                    labels: datos.dias,
+                    datasets: [{
+                        label: 'Costo (S/)',
+                        data: datos.costo,
+                        backgroundColor: primaryColor,
+                        borderRadius: 5,
+                        barThickness: 30
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true,
+                            grid: { display: true, borderDash: [5, 5] }
+                        },
+                        x: { grid: { display: false } }
+                    }
                 }
-            }
+            });
         }
-    }
-});
 
-// Gráfico de Tiempo por Día
-const ctxTiempo = document.getElementById('chartTiempo').getContext('2d');
-new Chart(ctxTiempo, {
-    type: 'line',
-    data: {
-        labels: datosGrafico.dias,
-        datasets: [{
-            label: 'Tiempo (minutos)',
-            data: datosGrafico.tiempo,
-            backgroundColor: 'rgba(23, 162, 184, 0.2)',
-            borderColor: colores.info,
-            borderWidth: 3,
-            fill: true,
-            tension: 0.4
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                display: true
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true
-            }
+        // 3. Gráfico de Tiempo (Línea)
+        const ctxTiempo = document.getElementById('chartTiempo');
+        if (ctxTiempo) {
+            new Chart(ctxTiempo, {
+                type: 'line',
+                data: {
+                    labels: datos.dias,
+                    datasets: [{
+                        label: 'Minutos',
+                        data: datos.tiempo,
+                        borderColor: secondaryColor,
+                        backgroundColor: 'rgba(255, 183, 3, 0.1)',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: secondaryColor,
+                        pointRadius: 5,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { display: false, beginAtZero: true },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
         }
-    }
-});
-
-// Gráfico de Costos por Día
-const ctxCostos = document.getElementById('chartCostos').getContext('2d');
-new Chart(ctxCostos, {
-    type: 'bar',
-    data: {
-        labels: datosGrafico.dias,
-        datasets: [{
-            label: 'Costo (S/)',
-            data: datosGrafico.costo,
-            backgroundColor: colores.success,
-            borderColor: 'rgba(40, 167, 69, 1)',
-            borderWidth: 2
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                display: true
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true
-            }
-        }
-    }
-});
+    });
 </script>
 {% endblock %}

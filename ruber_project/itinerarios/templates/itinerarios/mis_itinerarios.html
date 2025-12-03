@@ -1,229 +1,103 @@
 {% extends 'core/base.html' %}
 {% load static %}
 
-{% block title %}Mis Itinerarios - Ruber{% endblock %}
-
-{% block extra_head %}
-<style>
-.itinerary-card {
-    transition: all 0.3s ease;
-    border: none;
-    border-radius: 15px;
-    overflow: hidden;
-}
-
-.itinerary-card:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-}
-
-.card-header-custom {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 20px;
-}
-
-.status-badge {
-    padding: 8px 15px;
-    border-radius: 20px;
-    font-size: 0.85rem;
-    font-weight: 600;
-}
-
-.stat-item {
-    padding: 10px;
-    background: #f8f9fa;
-    border-radius: 10px;
-    margin: 5px 0;
-}
-
-.empty-state {
-    text-align: center;
-    padding: 60px 20px;
-}
-
-.empty-state i {
-    font-size: 5rem;
-    color: #ccc;
-    margin-bottom: 20px;
-}
-</style>
-{% endblock %}
+{% block title %}Mis Itinerarios | Ruber{% endblock %}
 
 {% block content %}
 <div class="container py-5">
-    <!-- Header -->
-    <div class="row mb-4">
-        <div class="col">
-            <h2><i class="fas fa-map-marked-alt"></i> Mis Itinerarios</h2>
-            <p class="text-muted">Gestiona tus planes de viaje</p>
+    
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h1 class="fw-bold text-dark mb-1">Mis Viajes</h1>
+            <p class="text-muted mb-0">Gestiona tus planes y revive tus aventuras.</p>
         </div>
-        <div class="col-auto">
-            <a href="{% url 'itinerarios:generar' %}" class="btn btn-success btn-lg">
-                <i class="fas fa-magic"></i> Generar Nuevo Itinerario
-            </a>
-        </div>
+        <a href="{% url 'itinerarios:generar' %}" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm hover-up">
+            <i class="fas fa-plus-circle me-2"></i> Nuevo Itinerario
+        </a>
     </div>
 
-    <!-- Estadísticas Generales -->
-    {% if total_itinerarios > 0 %}
-    <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card shadow-sm">
-                <div class="card-body text-center">
-                    <i class="fas fa-route fa-3x text-primary mb-2"></i>
-                    <h3>{{ total_itinerarios }}</h3>
-                    <p class="text-muted mb-0">Itinerarios Totales</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card shadow-sm">
-                <div class="card-body text-center">
-                    <i class="fas fa-check-circle fa-3x text-success mb-2"></i>
-                    <h3>{{ itinerarios|selectattr:"estado", "equalto", "confirmado"|list|length }}</h3>
-                    <p class="text-muted mb-0">Confirmados</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card shadow-sm">
-                <div class="card-body text-center">
-                    <i class="fas fa-clock fa-3x text-warning mb-2"></i>
-                    <h3>{{ itinerarios|selectattr:"estado", "equalto", "borrador"|list|length }}</h3>
-                    <p class="text-muted mb-0">En Borrador</p>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Lista de Itinerarios -->
     {% if itinerarios %}
-    <div class="row">
+    <div class="row g-4">
         {% for itinerario in itinerarios %}
-        <div class="col-md-6 col-lg-4 mb-4">
-            <div class="card itinerary-card shadow">
-                <div class="card-header-custom">
-                    <h5 class="mb-1">{{ itinerario.nombre }}</h5>
-                    <small>
-                        <i class="fas fa-calendar-alt"></i> 
-                        {{ itinerario.fecha_inicio|date:"d/m/Y" }} - {{ itinerario.fecha_fin|date:"d/m/Y" }}
-                    </small>
-                </div>
-                <div class="card-body">
-                    <!-- Estado -->
-                    <div class="mb-3">
-                        {% if itinerario.estado == 'borrador' %}
-                        <span class="status-badge bg-warning text-dark">
-                            <i class="fas fa-edit"></i> Borrador
-                        </span>
-                        {% elif itinerario.estado == 'confirmado' %}
-                        <span class="status-badge bg-success text-white">
-                            <i class="fas fa-check"></i> Confirmado
-                        </span>
-                        {% elif itinerario.estado == 'en_proceso' %}
-                        <span class="status-badge bg-info text-white">
-                            <i class="fas fa-spinner"></i> En Proceso
-                        </span>
-                        {% elif itinerario.estado == 'completado' %}
-                        <span class="status-badge bg-primary text-white">
-                            <i class="fas fa-flag-checkered"></i> Completado
-                        </span>
-                        {% elif itinerario.estado == 'cancelado' %}
-                        <span class="status-badge bg-danger text-white">
-                            <i class="fas fa-times"></i> Cancelado
-                        </span>
-                        {% endif %}
-                    </div>
-
-                    <!-- Descripción -->
-                    {% if itinerario.descripcion %}
-                    <p class="text-muted small mb-3">{{ itinerario.descripcion|truncatewords:15 }}</p>
-                    {% endif %}
-
-                    <!-- Estadísticas -->
-                    <div class="stat-item">
-                        <i class="fas fa-map-marker-alt text-primary"></i>
-                        <strong>{{ itinerario.num_destinos|default:"0" }}</strong> destinos
-                    </div>
-                    <div class="stat-item">
-                        <i class="fas fa-calendar-day text-success"></i>
-                        <strong>{{ itinerario.num_dias|default:"0" }}</strong> días
-                    </div>
-                    <div class="stat-item">
-                        <i class="fas fa-list text-info"></i>
-                        <strong>{{ itinerario.num_actividades|default:"0" }}</strong> actividades
-                    </div>
-                    <div class="stat-item">
-                        <i class="fas fa-dollar-sign text-warning"></i>
-                        <strong>S/ {{ itinerario.costo_total }}</strong>
-                    </div>
-                    <div class="stat-item">
-                        <i class="fas fa-clock text-danger"></i>
-                        <strong>{{ itinerario.tiempo_total_minutos }}</strong> minutos
-                    </div>
-
-                    <!-- Acciones -->
-                    <div class="mt-3">
-                        <a href="{% url 'itinerarios:detalle' itinerario.id %}" 
-                           class="btn btn-primary btn-sm w-100 mb-2">
-                            <i class="fas fa-eye"></i> Ver Detalles
-                        </a>
+        <div class="col-md-6 col-lg-4">
+            <a href="{% url 'itinerarios:detalle' itinerario.id %}" class="text-decoration-none">
+                <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden hover-up transition-all">
+                    
+                    <div class="p-4 text-white position-relative" style="background: linear-gradient(135deg, #00838F 0%, #006064 100%);">
+                        <h5 class="fw-bold mb-1 text-truncate">{{ itinerario.nombre }}</h5>
+                        <p class="small mb-0 opacity-75">
+                            <i class="fas fa-calendar-alt me-1"></i> {{ itinerario.fecha_inicio|date:"d M" }} - {{ itinerario.fecha_fin|date:"d M Y" }}
+                        </p>
                         
-                        {% if itinerario.estado == 'borrador' %}
-                        <a href="{% url 'itinerarios:duplicar' itinerario.id %}" 
-                           class="btn btn-outline-secondary btn-sm w-100">
-                            <i class="fas fa-copy"></i> Duplicar
-                        </a>
-                        {% endif %}
+                        <span class="position-absolute top-0 end-0 m-3 badge bg-white text-dark bg-opacity-75 rounded-pill shadow-sm">
+                            {% if itinerario.estado == 'borrador' %}
+                                <i class="fas fa-pencil-alt text-warning me-1"></i> Borrador
+                            {% else %}
+                                <i class="fas fa-check-circle text-success me-1"></i> Listo
+                            {% endif %}
+                        </span>
+                    </div>
+
+                    <div class="card-body p-4">
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <div class="p-2 bg-light rounded-3 text-center">
+                                    <small class="text-muted d-block text-uppercase" style="font-size: 0.7rem;">Costo</small>
+                                    <span class="fw-bold text-dark">S/ {{ itinerario.costo_total|floatformat:0 }}</span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="p-2 bg-light rounded-3 text-center">
+                                    <small class="text-muted d-block text-uppercase" style="font-size: 0.7rem;">Actividades</small>
+                                    <span class="fw-bold text-dark">{{ itinerario.num_actividades|default:"0" }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <p class="text-muted small mb-0">
+                            <i class="fas fa-clock me-1 text-info"></i> Creado el {{ itinerario.fecha_creacion|date:"d/m/Y" }}
+                        </p>
+                    </div>
+                    
+                    <div class="card-footer bg-white border-top-0 p-4 pt-0">
+                        <div class="d-grid">
+                            <span class="btn btn-outline-primary rounded-pill btn-sm fw-bold">
+                                Ver Detalles <i class="fas fa-arrow-right ms-2"></i>
+                            </span>
+                        </div>
                     </div>
                 </div>
-                <div class="card-footer text-muted small">
-                    <i class="fas fa-clock"></i> Creado {{ itinerario.fecha_creacion|timesince }} atrás
-                </div>
-            </div>
+            </a>
         </div>
         {% endfor %}
     </div>
 
-    <!-- Paginación (si es necesario) -->
-    {% if itinerarios.has_other_pages %}
-    <nav aria-label="Paginación de itinerarios">
-        <ul class="pagination justify-content-center">
-            {% if itinerarios.has_previous %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ itinerarios.previous_page_number }}">Anterior</a>
-            </li>
-            {% endif %}
-            
-            {% for num in itinerarios.paginator.page_range %}
-            <li class="page-item {% if itinerarios.number == num %}active{% endif %}">
-                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
-            </li>
-            {% endfor %}
-            
-            {% if itinerarios.has_next %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ itinerarios.next_page_number }}">Siguiente</a>
-            </li>
-            {% endif %}
-        </ul>
-    </nav>
-    {% endif %}
-
     {% else %}
-    <!-- Estado vacío -->
-    <div class="empty-state">
-        <i class="fas fa-map-signs"></i>
-        <h3>Aún no tienes itinerarios</h3>
-        <p class="text-muted mb-4">
-            Comienza a planificar tu aventura generando tu primer itinerario automático
-        </p>
-        <a href="{% url 'itinerarios:generar' %}" class="btn btn-success btn-lg">
-            <i class="fas fa-magic"></i> Generar Mi Primer Itinerario
+    <div class="text-center py-5">
+        <div class="mb-4 text-muted opacity-25">
+            <i class="fas fa-map-marked-alt fa-5x"></i>
+        </div>
+        <h3 class="fw-bold text-muted">No tienes itinerarios creados</h3>
+        <p class="text-muted mb-4">¡Es hora de planificar tu primera aventura en Perú!</p>
+        <a href="{% url 'itinerarios:generar' %}" class="btn btn-primary rounded-pill px-5 py-3 fw-bold shadow hover-up">
+            Comenzar Ahora
         </a>
     </div>
     {% endif %}
+
 </div>
+
+<style>
+    /* Efecto de elevación */
+    .hover-up {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .hover-up:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
+    }
+    .transition-all {
+        transition: all 0.3s ease;
+    }
+</style>
 {% endblock %}
