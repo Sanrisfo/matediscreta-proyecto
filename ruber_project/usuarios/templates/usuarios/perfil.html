@@ -1,54 +1,170 @@
 {% extends 'core/base.html' %}
 {% load crispy_forms_tags %}
+{% load static %}
 
-{% block title %}Mi Perfil - Ruber{% endblock %}
+{% block title %}Mi Perfil | Ruber{% endblock %}
 
 {% block content %}
+
+<style>
+    :root {
+        --cyan-dark: #00838F;
+        --cyan-hover: #006064;
+    }
+    .text-cyan { color: var(--cyan-dark) !important; }
+    .bg-cyan { background-color: var(--cyan-dark) !important; color: white; }
+    
+    .btn-cyan { 
+        background-color: var(--cyan-dark); 
+        color: white; 
+        border: none; 
+        transition: all 0.3s ease;
+    }
+    .btn-cyan:hover { 
+        background-color: var(--cyan-hover); 
+        color: white; 
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 131, 143, 0.3);
+    }
+
+    .profile-header-bg {
+        background: linear-gradient(135deg, #00838F 0%, #006064 100%);
+        height: 150px;
+        border-radius: 1rem 1rem 0 0;
+    }
+
+    .profile-avatar {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        border: 5px solid white;
+        margin-top: -60px;
+        background-color: #f8f9fa;
+        object-fit: cover;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .stat-card {
+        transition: transform 0.3s ease;
+        border: none;
+        border-radius: 1rem;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.05) !important;
+    }
+</style>
+
 <div class="container py-5">
-    <div class="row">
-        <div class="col-md-8 mx-auto">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white">
-                    <h3 class="mb-0"><i class="fas fa-user-circle"></i> Mi Perfil</h3>
+    <div class="row g-4">
+        
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                
+                <div class="profile-header-bg d-flex align-items-center justify-content-center">
+                    <h3 class="text-white fw-bold mb-0">
+                        <i class="fas fa-user-edit me-2 text-warning"></i> Editar Perfil
+                    </h3>
                 </div>
-                <div class="card-body">
-                    <form method="post" enctype="multipart/form-data">
+
+                <div class="card-body p-4 text-center">
+                    
+                    {% if user.foto_perfil %}
+                        <img src="{{ user.foto_perfil.url }}" alt="Perfil" class="profile-avatar mb-3">
+                    {% else %}
+                        <div class="profile-avatar d-inline-flex align-items-center justify-content-center mb-3 text-cyan display-4 fw-bold">
+                            {{ user.username.0|upper }}
+                        </div>
+                    {% endif %}
+                    
+                    <h4 class="fw-bold mb-1">{{ user.get_full_name|default:user.username }}</h4>
+                    <p class="text-muted small mb-4">{{ user.email }}</p>
+
+                    <hr class="my-4 opacity-10">
+
+                    <form method="post" enctype="multipart/form-data" class="text-start">
                         {% csrf_token %}
-                        {{ form|crispy }}
-                        <div class="text-end">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> Guardar Cambios
+                        
+                        <div class="row g-3">
+                            {{ form|crispy }}
+                        </div>
+
+                        <div class="d-flex justify-content-end mt-4 pt-3 border-top">
+                            <a href="{% url 'core:home' %}" class="btn btn-outline-secondary rounded-pill px-4 me-2">
+                                Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-cyan rounded-pill px-5 fw-bold">
+                                <i class="fas fa-save me-2"></i> Guardar Cambios
                             </button>
                         </div>
                     </form>
                 </div>
             </div>
+        </div>
+
+        <div class="col-lg-4">
             
-            <!-- Resumen de actividad -->
-            <div class="card shadow mt-4">
-                <div class="card-header">
-                    <h5 class="mb-0">Estadísticas</h5>
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="fw-bold mb-0 text-cyan">
+                        <i class="fas fa-chart-pie me-2"></i> Mi Actividad
+                    </h5>
                 </div>
-                <div class="card-body">
-                    <div class="row text-center">
-                        <div class="col-md-4">
-                            <i class="fas fa-calendar-check fa-2x text-primary mb-2"></i>
-                            <h4>{{ user.itinerarios.count }}</h4>
-                            <p class="text-muted">Itinerarios</p>
+                <div class="card-body pt-0">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <div class="stat-card bg-light p-3 d-flex align-items-center">
+                                <div class="bg-white p-3 rounded-circle shadow-sm me-3 text-cyan">
+                                    <i class="fas fa-map-signs fa-lg"></i>
+                                </div>
+                                <div>
+                                    <h3 class="fw-bold mb-0">{{ user.itinerarios.count }}</h3>
+                                    <span class="text-muted small text-uppercase fw-bold ls-1">Itinerarios</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-4">
-                            <i class="fas fa-map-marked-alt fa-2x text-success mb-2"></i>
-                            <h4>0</h4>
-                            <p class="text-muted">Destinos Visitados</p>
+
+                        <div class="col-12">
+                            <div class="stat-card bg-light p-3 text-center h-100">
+                                <i class="fas fa-map-marked-alt fa-2x text-warning mb-2"></i>
+                                <h4 class="fw-bold mb-0">0</h4>
+                                <span class="text-muted small">Visitados</span>
+                            </div>
                         </div>
-                        <div class="col-md-4">
-                            <i class="fas fa-ticket-alt fa-2x text-info mb-2"></i>
-                            <h4>0</h4>
-                            <p class="text-muted">Tickets Activos</p>
-                        </div>
+
+                        
                     </div>
                 </div>
             </div>
+
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-header bg-warning text-dark border-0 py-3">
+                    <h5 class="fw-bold mb-0">
+                        <i class="fas fa-bolt me-2"></i> Acciones Rápidas
+                    </h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'itinerarios:generar' %}" class="list-group-item list-group-item-action py-3 d-flex align-items-center border-0 border-bottom">
+                        
+                        <div>
+                            <h6 class="fw-bold mb-0">Crear nuevo Itinerario</h6>
+                            <small class="text-muted">Planea con nuestro algoritmo</small>
+                        </div>
+                        <i class="fas fa-chevron-right ms-auto text-muted small"></i>
+                    </a>
+                    <a href="{% url 'itinerarios:mis_itinerarios' %}" class="list-group-item list-group-item-action py-3 d-flex align-items-center border-0">
+                        <div class="bg-warning bg-opacity-10 p-2 rounded-circle me-3 text-warning">
+                            <i class="fas fa-list-ul"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold mb-0">Ver mis viajes</h6>
+                            <small class="text-muted">Consulta tus planes guardados</small>
+                        </div>
+                        <i class="fas fa-chevron-right ms-auto text-muted small"></i>
+                    </a>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>

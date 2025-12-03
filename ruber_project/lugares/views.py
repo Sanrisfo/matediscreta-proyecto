@@ -2,23 +2,23 @@ from django.shortcuts import render, get_object_or_404
 from django.contrib.auth import get_user_model
 from django.db.models import Q
 from .recomendations import obtener_recomendaciones
-from .models import Destino, Categoria
+from .models import Destino, Categoria, Actividad
 from .red_black_tree import ordenar_destinos_rb
+# IMPORTANTE: Importar el formulario de itinerarios
+from itinerarios.forms import AgregarActividadForm
 
 
 def lista_destinos(request):
     """Lista de destinos con filtros"""
     destinos = Destino.objects.filter(activo=True)
     
-    # --- CAMBIOS AQUI ---
-    preferencias_usuario = [] # Inicializamos como lista vacía por defecto
+    preferencias_usuario = []
     
     if request.user.is_authenticated:
         print(request.user.username)
         preferencias_usuario = request.user.preferencias
     else:
         print("Usuario no logueado (Anónimo)")
-    # --- FIN CAMBIOS ---
 
     A=[]
     
@@ -53,13 +53,10 @@ def lista_destinos(request):
     categorias = Categoria.objects.all()
     print(destinos)
 
-
-    #Arbol
-    # Obtener parámetros de ordenamiento
-    orden = request.GET.get('orden', 'nombre')  # Por defecto: alfabético
-    direccion = request.GET.get('dir', 'asc')   # Por defecto: ascendente
+    # Árbol Rojo-Negro
+    orden = request.GET.get('orden', 'nombre')
+    direccion = request.GET.get('dir', 'asc')
     
-    # Opciones válidas
     opciones_orden = {
         'nombre': 'nombre',
         'calificacion': 'calificacion',
@@ -69,22 +66,16 @@ def lista_destinos(request):
     criterio = opciones_orden.get(orden, 'nombre')
     reverso = (direccion == 'desc')
 
-    # Aplicar ordenamiento usando Árbol Rojo-Negro
     usar_rb_tree = request.GET.get('usar_rb', 'true') == 'true'
 
     if usar_rb_tree and destinos.exists():
-        
         print(f"\n🌳 Usando Árbol Rojo-Negro para ordenar")
         print(f"   Criterio: {criterio}")
         print(f"   Dirección: {'Descendente' if reverso else 'Ascendente'}")
         
-        # Ordenar usando árbol
         destinos_ordenados, arbol = ordenar_destinos_rb(destinos, criterio, reverso)
-        
-        # Convertir a lista (ya está ordenado)
         destinos = destinos_ordenados
         
-        # Información del árbol para mostrar en template
         info_arbol = {
             'usado': True,
             'nodos': arbol.cantidad_nodos,
@@ -95,7 +86,6 @@ def lista_destinos(request):
         }
 
     print(destinos)
-    # Debug: Imprimir información
     if isinstance(destinos, list):
         print(f"Total de destinos después de filtros: {len(destinos)}")
         if destinos:
@@ -105,14 +95,11 @@ def lista_destinos(request):
         if destinos.exists():
             print(f"Primer destino: {destinos.first().nombre}")
 
-    
     context = {
         'destinos': destinos,
         'categorias': categorias,
         'categoria_actual': categoria_id,
-
         'preferencias_usuario': preferencias_usuario,
-
         'busqueda_actual': busqueda, 
         'orden_actual': orden,
         'direccion_actual': direccion,
@@ -122,7 +109,7 @@ def lista_destinos(request):
 
 
 def detalle_destino(request, destino_id):
-    """Detalle de un destino con actividades"""
+    """Detalle de un destino con actividades y formulario para agregar"""
     destino = get_object_or_404(Destino, id=destino_id, activo=True)
     actividades = destino.actividades.filter(disponible=True)
     imagenes = destino.imagenes.all()
@@ -131,10 +118,10 @@ def detalle_destino(request, destino_id):
     costo_total_actividades = sum(act.costo for act in actividades)
     tiempo_total_actividades = sum(act.duracion_minutos for act in actividades)
     
-    print(f" 1) {costo_total_actividades}")
-    print(f" 2) {tiempo_total_actividades}")
+    print(f"1) {costo_total_actividades}")
+    print(f"2) {tiempo_total_actividades}")
     
-    recomendaciones=obtener_recomendaciones(destino,5)
+    recomendaciones = obtener_recomendaciones(destino, 5)
 
     print(f"Mostrando detalle de: {destino.nombre}")
     print(f"Actividades disponibles: {actividades.count()}")
@@ -142,15 +129,18 @@ def detalle_destino(request, destino_id):
     print(f"Recomendaciones generadas: {len(recomendaciones)}")
     print(recomendaciones)
 
-
+    # NUEVO: Crear formulario para agregar a itinerario
+    form_agregar = None
+    if request.user.is_authenticated:
+        form_agregar = AgregarActividadForm(usuario=request.user)
 
     context = {
         'destino': destino,
         'actividades': actividades,
         'imagenes': imagenes,
-
         'costo_total_actividades': costo_total_actividades,
         'tiempo_total_actividades': tiempo_total_actividades,
         'recomendaciones': recomendaciones,
+        'form_agregar': form_agregar,  # NUEVO
     }
     return render(request, 'lugares/detalle_destino.html', context)

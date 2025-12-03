@@ -15,10 +15,10 @@
         </div>
         <div class="d-flex gap-2">
             <a href="{% url 'itinerarios:regenerar' itinerario.id %}" class="btn btn-warning text-dark fw-bold shadow-sm rounded-pill">
-                <i class="fas fa-random me-2"></i> Regenerar (3 Aleatorias)
+                <i class="fas fa-sync-alt me-2"></i> Regenerar Aleatorio
             </a>
             <a href="{% url 'itinerarios:mis_itinerarios' %}" class="btn btn-outline-secondary rounded-pill">
-                Volver a mis viajes
+                Volver
             </a>
         </div>
     </div>
@@ -31,7 +31,7 @@
                         <i class="fas fa-wallet fa-2x"></i>
                     </div>
                     <div>
-                        <h6 class="text-muted text-uppercase small mb-1 ls-1">Presupuesto Estimado</h6>
+                        <h6 class="text-muted text-uppercase small mb-1 ls-1">Presupuesto Total</h6>
                         <h3 class="fw-bold mb-0 text-dark">S/ {{ itinerario.costo_total|floatformat:0 }}</h3>
                     </div>
                 </div>
@@ -85,26 +85,44 @@
                                     <span class="badge bg-light text-dark border rounded-pill mb-1 px-3">Día {{ item.dia }}</span>
                                     <div class="fw-bold text-primary">{{ item.hora_inicio|time:"H:i" }}</div>
                                     <div class="small text-muted">{{ item.hora_fin|time:"H:i" }}</div>
+                                    
                                     {% if not forloop.last %}
-                                    <div class="position-absolute bg-light" style="width: 2px; height: 100%; top: 40px; left: 40px; z-index: 0;"></div>
+                                    <div class="position-absolute bg-light" style="width: 2px; height: 100%; top: 45px; left: 40px; z-index: 0;"></div>
                                     {% endif %}
                                 </div>
                                 
                                 <div class="card border-0 bg-light rounded-4 w-100 p-3 hover-up transition-all" style="z-index: 1;">
                                     <div class="d-flex justify-content-between align-items-start">
                                         <div>
-                                            <h6 class="fw-bold mb-1 text-dark">{{ item.destino.nombre }}</h6>
-                                            <p class="text-primary small mb-2 fw-medium">
-                                                <i class="fas fa-check-circle me-1"></i> {{ item.notas }}
+                                            <h6 class="fw-bold mb-1 text-dark">
+                                                {{ item.notas }}
+                                            </h6>
+                                            
+                                            <p class="text-muted small mb-0">
+                                                <i class="fas fa-map-marker-alt me-1 text-secondary"></i> {{ item.destino.nombre }}
                                             </p>
                                         </div>
-                                        <span class="badge bg-white text-success shadow-sm border">
+                                        
+                                        <span class="badge bg-white text-success shadow-sm border px-3 py-2 rounded-pill">
                                             S/ {{ item.destino.costo_entrada|floatformat:0 }}
                                         </span>
                                     </div>
-                                    <div class="d-flex gap-3 small text-muted mt-2 border-top pt-2">
-                                        <span><i class="fas fa-map-marker-alt me-1"></i> {{ item.destino.categoria.nombre }}</span>
-                                        <span><i class="fas fa-stopwatch me-1"></i> 90 min</span>
+                                    
+                                    <div class="d-flex justify-content-between align-items-center border-top pt-2 mt-2">
+                                        <div class="d-flex gap-3 small text-muted">
+                                            <span><i class="fas fa-tag me-1"></i> {{ item.destino.categoria.nombre }}</span>
+                                            <span><i class="fas fa-hourglass-half me-1"></i> 90 min</span>
+                                        </div>
+                                        
+                                        <div class="btn-group">
+                                            <a href="{% url 'itinerarios:editar_item' item.id %}" class="btn btn-sm btn-link text-muted p-0 me-3" title="Editar horario">
+                                                <i class="fas fa-pencil-alt"></i>
+                                            </a>
+                                            
+                                            <a href="{% url 'itinerarios:eliminar_item' item.id %}" class="btn btn-sm btn-link text-danger p-0" onclick="return confirm('¿Eliminar esta actividad?')" title="Eliminar">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </a>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -165,30 +183,16 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        
-        // 1. Obtener y parsear los datos de Django
         const rawData = '{{ datos_grafico|safe }}';
-        console.log("Datos recibidos:", rawData); // Para depuración
-        
         let datos = null;
-        try {
-            datos = JSON.parse(rawData);
-        } catch (e) {
-            console.error("Error al leer JSON:", e);
-            return;
-        }
+        try { datos = JSON.parse(rawData); } catch (e) { console.error(e); return; }
 
-        // Validar que existan datos para graficar
-        if (!datos || !datos.dias || datos.dias.length === 0) {
-            console.warn("No hay datos suficientes para los gráficos");
-            return;
-        }
+        if (!datos || !datos.dias || datos.dias.length === 0) return;
 
-        // Configuración común de colores
-        const primaryColor = '#00838F'; // Tu color Cian
-        const secondaryColor = '#FFB703'; // Tu color Amarillo
+        const primaryColor = '#00838F';
+        const secondaryColor = '#FFB703';
 
-        // 2. Gráfico de Costos (Barras)
+        // Gráfico Costos
         const ctxCostos = document.getElementById('chartCostos');
         if (ctxCostos) {
             new Chart(ctxCostos, {
@@ -206,21 +210,16 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false }
-                    },
+                    plugins: { legend: { display: false } },
                     scales: {
-                        y: { 
-                            beginAtZero: true,
-                            grid: { display: true, borderDash: [5, 5] }
-                        },
+                        y: { beginAtZero: true, grid: { display: true, borderDash: [5, 5] } },
                         x: { grid: { display: false } }
                     }
                 }
             });
         }
 
-        // 3. Gráfico de Tiempo (Línea)
+        // Gráfico Tiempo
         const ctxTiempo = document.getElementById('chartTiempo');
         if (ctxTiempo) {
             new Chart(ctxTiempo, {
@@ -243,9 +242,7 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false }
-                    },
+                    plugins: { legend: { display: false } },
                     scales: {
                         y: { display: false, beginAtZero: true },
                         x: { grid: { display: false } }
