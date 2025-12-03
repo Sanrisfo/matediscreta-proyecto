@@ -5,25 +5,22 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from .models import Itinerario, ItemItinerario
 from .forms import GenerarItinerarioForm
-from .generators import GeneradorItinerarios, AgregadorActividadesInteligente
+from .generators import GeneradorItinerarios, RegeneradorActividades
 from lugares.models import Actividad
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 
 @login_required
 def generar_itinerario(request):
     """
-    Formulario para generar itinerario automático usando algoritmos
-    de Matemática Discreta
+    Formulario para generar itinerario automático (SOLO UNA VEZ)
     """
     if request.method == 'POST':
         form = GenerarItinerarioForm(request.POST)
         if form.is_valid():
-            # Extraer datos del formulario
             datos = form.cleaned_data
             
             try:
-                # Generar itinerario usando el algoritmo inteligente
                 generador = GeneradorItinerarios(turista=request.user)
                 itinerario = generador.generar(
                     fecha_inicio=datos['fecha_inicio'],
@@ -32,51 +29,46 @@ def generar_itinerario(request):
                     presupuesto_max=datos.get('presupuesto_max')
                 )
                 
-                # Verificar si se generaron items
-                if itinerario.items.count() > 0:
+                num_items = itinerario.items.count()
+                
+                if num_items > 0:
                     messages.success(
                         request, 
-                        f'¡Itinerario generado exitosamente! '
-                        f'Se han seleccionado {itinerario.items.count()} actividades '
-                        f'en {itinerario.items.values("dia").distinct().count()} días.'
+                        f'¡Itinerario generado con {num_items} actividades! '
+                        f'Puedes regenerar actividades desde el dashboard.'
                     )
                 else:
                     messages.warning(
                         request,
-                        'No se encontraron destinos que coincidan con tus preferencias. '
-                        'Intenta ajustar los filtros o ampliar el presupuesto.'
+                        'No se encontraron destinos que coincidan. Intenta ajustar los filtros.'
                     )
                 
                 return redirect('itinerarios:detalle', itinerario_id=itinerario.id)
                 
             except Exception as e:
-                messages.error(
-                    request,
-                    f'Error al generar el itinerario: {str(e)}. Por favor intenta nuevamente.'
-                )
+                messages.error(request, f'Error: {str(e)}')
     else:
         form = GenerarItinerarioForm()
     
-    # Obtener estadísticas para mostrar en la página
-    total_destinos = request.user.destinos.filter(activo=True).count() if hasattr(request.user, 'destinos') else 0
-    
-    context = {
-        'form': form,
-        'total_destinos': total_destinos,
-    }
-    
+    context = {'form': form}
     return render(request, 'itinerarios/generar.html', context)
 
 
 @login_required
 def detalle_itinerario(request, itinerario_id):
     """
-    Ver detalle de un itinerario con visualización de cronograma
+    Dashboard del itinerario con métricas REALES
+    CORREGIDO: Ahora extrae costos de las actividades reales
     """
     itinerario = get_object_or_404(Itinerario, id=itinerario_id, turista=request.user)
+    
+    # Recalcular totales para asegurar datos actualizados
+    itinerario.calcular_totales()
+    itinerario.refresh_from_db()
+    
     items = itinerario.items.all().select_related('destino', 'destino__categoria')
     
-    # Agrupar items por día para el cronograma
+    # Agrupar items por día
     items_por_dia = {}
     for item in items:
         if item.dia not in items_por_dia:
@@ -85,10 +77,10 @@ def detalle_itinerario(request, itinerario_id):
     
     # Calcular estadísticas
     total_destinos = items.values('destino').distinct().count()
-    total_dias = len(items_por_dia)
+    total_dias = len(items_por_dia) if items_por_dia else 1
     promedio_actividades_dia = items.count() / total_dias if total_dias > 0 else 0
     
-    # Datos para gráfico (JSON)
+    # Datos para gráficos - CORREGIDO
     datos_grafico = {
         'dias': [],
         'actividades': [],
@@ -96,19 +88,56 @@ def detalle_itinerario(request, itinerario_id):
         'costo': []
     }
     
-    for dia in sorted(items_por_dia.keys()):
-        items_dia = items_por_dia[dia]
-        tiempo_dia = sum([
-            (datetime.combine(datetime.today(), item.hora_fin) - 
-             datetime.combine(datetime.today(), item.hora_inicio)).seconds / 60
-            for item in items_dia
-        ])
-        costo_dia = sum([float(item.destino.costo_entrada) for item in items_dia])
-        
-        datos_grafico['dias'].append(f'Día {dia}')
-        datos_grafico['actividades'].append(len(items_dia))
-        datos_grafico['tiempo'].append(int(tiempo_dia))
-        datos_grafico['costo'].append(costo_dia)
+    if items.exists():
+        for dia in sorted(items_por_dia.keys()):
+            items_dia = items_por_dia[dia]
+            
+            # Calcular tiempo REAL del día
+            tiempo_dia = 0
+            for item in items_dia:
+                if item.hora_inicio and item.hora_fin:
+                    inicio_dt = datetime.combine(datetime.today(), item.hora_inicio)
+                    fin_dt = datetime.combine(datetime.today(), item.hora_fin)
+                    
+                    # Manejar casos donde hora_fin es menor (cruza medianoche)
+                    if fin_dt < inicio_dt:
+                        fin_dt += timedelta(days=1)
+                    
+                    tiempo_dia += (fin_dt - inicio_dt).seconds / 60
+            
+            # Calcular costo REAL del día (extrayendo de notas)
+            costo_dia = 0
+            for item in items_dia:
+                # Intentar extraer costo de las notas
+                costo_item = None
+                
+                if item.notas and 'Costo:' in item.notas:
+                    try:
+                        import re
+                        match = re.search(r'S/\s*(\d+\.?\d*)', item.notas)
+                        if match:
+                            costo_item = float(match.group(1))
+                    except:
+                        pass
+                
+                # Fallback al costo del destino
+                if costo_item is None:
+                    costo_item = float(item.destino.costo_entrada)
+                
+                costo_dia += costo_item
+            
+            datos_grafico['dias'].append(f'Día {dia}')
+            datos_grafico['actividades'].append(len(items_dia))
+            datos_grafico['tiempo'].append(int(tiempo_dia))
+            datos_grafico['costo'].append(round(costo_dia, 2))
+    else:
+        # Datos vacíos si no hay items
+        datos_grafico = {
+            'dias': ['Sin datos'],
+            'actividades': [0],
+            'tiempo': [0],
+            'costo': [0]
+        }
     
     context = {
         'itinerario': itinerario,
@@ -117,22 +146,48 @@ def detalle_itinerario(request, itinerario_id):
         'total_destinos': total_destinos,
         'total_dias': total_dias,
         'promedio_actividades_dia': round(promedio_actividades_dia, 1),
-        'datos_grafico': json.dumps(datos_grafico),  # Convertir a JSON
+        'datos_grafico': json.dumps(datos_grafico),
     }
     return render(request, 'itinerarios/detalle_itinerario.html', context)
 
 
 @login_required
+def regenerar_actividades(request, itinerario_id):
+    """
+    Regenera 3 actividades aleatorias para el itinerario
+    """
+    itinerario = get_object_or_404(Itinerario, id=itinerario_id, turista=request.user)
+    
+    try:
+        # Obtener preferencias del usuario si existen
+        preferencias = []
+        if hasattr(request.user, 'preferencias') and request.user.preferencias:
+            preferencias = request.user.preferencias.split(',')
+        
+        # Regenerar actividades
+        regenerador = RegeneradorActividades(itinerario)
+        regenerador.regenerar_3_actividades(preferencias)
+        
+        messages.success(request, '¡3 nuevas actividades generadas exitosamente!')
+        
+    except Exception as e:
+        messages.error(request, f'Error al regenerar actividades: {str(e)}')
+    
+    return redirect('itinerarios:detalle', itinerario_id=itinerario.id)
+
+
+@login_required
 def mis_itinerarios(request):
     """
-    Lista de itinerarios del usuario con estadísticas
+    Lista de itinerarios (NO borra nada, solo muestra)
     """
     itinerarios = Itinerario.objects.filter(turista=request.user).order_by('-fecha_creacion')
     
-    # Agregar estadísticas a cada itinerario
+    # Agregar estadísticas calculadas
     for itinerario in itinerarios:
         itinerario.num_actividades = itinerario.items.count()
-        itinerario.num_dias = itinerario.items.values('dia').distinct().count()
+        itinerario.num_destinos = itinerario.items.values('destino').distinct().count()
+        itinerario.num_dias = itinerario.items.values('dia').distinct().count() or 1
     
     context = {
         'itinerarios': itinerarios,
@@ -143,53 +198,14 @@ def mis_itinerarios(request):
 
 
 @login_required
-@require_POST
-def agregar_actividad_rapida(request, itinerario_id):
-    """
-    API endpoint para agregar una actividad rápidamente al itinerario
-    desde cualquier página (usando AJAX)
-    """
-    itinerario = get_object_or_404(Itinerario, id=itinerario_id, turista=request.user)
-    actividad_id = request.POST.get('actividad_id')
-    
-    if not actividad_id:
-        return JsonResponse({'success': False, 'error': 'No se especificó actividad'}, status=400)
-    
-    try:
-        actividad = Actividad.objects.get(id=actividad_id, disponible=True)
-        
-        # Usar agregador inteligente
-        agregador = AgregadorActividadesInteligente(itinerario)
-        preferencias = request.user.preferencias.split(',') if hasattr(request.user, 'preferencias') else []
-        
-        item = agregador.agregar_actividad_auto(actividad, preferencias)
-        
-        return JsonResponse({
-            'success': True,
-            'message': f'Actividad "{actividad.nombre}" agregada al itinerario',
-            'item_id': item.id,
-            'dia': item.dia,
-            'hora_inicio': item.hora_inicio.strftime('%H:%M'),
-            'hora_fin': item.hora_fin.strftime('%H:%M'),
-        })
-        
-    except Actividad.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Actividad no encontrada'}, status=404)
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=500)
-
-
-@login_required
 def eliminar_item(request, item_id):
     """
-    Eliminar un item del itinerario y recalcular totales
+    Eliminar un item del itinerario
     """
     item = get_object_or_404(ItemItinerario, id=item_id, itinerario__turista=request.user)
     itinerario = item.itinerario
     
     item.delete()
-    
-    # Recalcular totales
     itinerario.calcular_totales()
     
     messages.success(request, 'Actividad eliminada del itinerario')
@@ -197,9 +213,23 @@ def eliminar_item(request, item_id):
 
 
 @login_required
+def eliminar_itinerario(request, itinerario_id):
+    """
+    Eliminar un itinerario completo
+    """
+    itinerario = get_object_or_404(Itinerario, id=itinerario_id, turista=request.user)
+    
+    nombre = itinerario.nombre
+    itinerario.delete()
+    
+    messages.success(request, f'Itinerario "{nombre}" eliminado exitosamente')
+    return redirect('itinerarios:mis_itinerarios')
+
+
+@login_required
 def duplicar_itinerario(request, itinerario_id):
     """
-    Duplicar un itinerario existente para modificarlo
+    Duplicar un itinerario existente
     """
     itinerario_original = get_object_or_404(Itinerario, id=itinerario_id, turista=request.user)
     

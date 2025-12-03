@@ -1,9 +1,9 @@
 from django.db import models
 from usuarios.models import Turista
 from lugares.models import Destino
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
-
+import re
 class Itinerario(models.Model):
     """
     Plan de viaje generado para un turista
@@ -44,9 +44,11 @@ class Itinerario(models.Model):
     def calcular_totales(self):
         """
         Calcula y actualiza los totales del itinerario:
-        - costo_total: suma de costos de entrada de todos los destinos
-        - tiempo_total_minutos: suma de duraciones de todas las actividades
+        - costo_total: suma de costos REALES de las actividades
+        - tiempo_total_minutos: suma de duraciones REALES
         - distancia_total_km: estimación basada en número de destinos
+        
+        CORREGIDO: Ahora extrae los costos de las notas si están disponibles
         """
         items = self.items.all().select_related('destino')
         
@@ -55,19 +57,42 @@ class Itinerario(models.Model):
         destinos_unicos = set()
         
         for item in items:
-            # Sumar costo (evitar duplicados de destinos)
-            if item.destino.id not in destinos_unicos:
-                costo_total += item.destino.costo_entrada
-                destinos_unicos.add(item.destino.id)
+            # Registrar destino único
+            destinos_unicos.add(item.destino.id)
             
-            # Calcular duración del item
+            # CALCULAR TIEMPO: Diferencia entre hora_inicio y hora_fin
             if item.hora_inicio and item.hora_fin:
                 inicio_dt = datetime.combine(datetime.today(), item.hora_inicio)
                 fin_dt = datetime.combine(datetime.today(), item.hora_fin)
+                
+                # Manejar casos donde hora_fin es al día siguiente
+                if fin_dt < inicio_dt:
+                    fin_dt += timedelta(days=1)
+                
                 duracion_minutos = (fin_dt - inicio_dt).seconds / 60
                 tiempo_total += int(duracion_minutos)
+            
+            # CALCULAR COSTO: Intentar extraer de las notas primero
+            costo_item = None
+            
+            # Intentar parsear el costo de las notas (formato: "💰 Costo: S/ 50.00")
+            if item.notas and 'Costo:' in item.notas:
+                try:
+                    # Buscar el patrón "S/ XX.XX" en las notas
+                    import re
+                    match = re.search(r'S/\s*(\d+\.?\d*)', item.notas)
+                    if match:
+                        costo_item = Decimal(match.group(1))
+                except:
+                    pass
+            
+            # Si no se pudo extraer, usar costo del destino
+            if costo_item is None:
+                costo_item = item.destino.costo_entrada
+            
+            costo_total += costo_item
         
-        # Estimar distancia (5km entre cada destino en promedio)
+        # Estimar distancia (5km entre cada destino)
         num_destinos = len(destinos_unicos)
         distancia_estimada = Decimal(str((num_destinos - 1) * 5)) if num_destinos > 1 else Decimal('0.00')
         
