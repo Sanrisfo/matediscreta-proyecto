@@ -112,20 +112,11 @@
                         S/ {{ destino.costo_entrada|floatformat:0 }}
                     </span>
                 </div>
-                {% endif %}
-                <div class="card-body">
-                    <h5 class="card-title">{{ destino.nombre }}</h5>
-                    <p class="card-text">{{ destino.descripcion|truncatewords:20 }}</p>
-                    <div class="mb-2">
-                        <span class="badge bg-info">{{ destino.categoria.nombre }}</span>
-                        {% if destino.costo_entrada > 0 %}
-                        <span class="badge bg-success">S/ {{ destino.costo_entrada }}</span>
-                        {% else %}
-                        <span class="badge bg-success">LIBRE</span>
-                        {% endif %}
-                    </div>
-                    <div class="d-flex justify-content-between">
-                        <span class="text-warning">
+
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title fw-bold mb-0 text-dark">{{ destino.nombre }}</h5>
+                        <div class="text-warning small fw-bold">
                             <i class="fas fa-star"></i> {{ destino.calificacion }}
                         </div>
                     </div>
