@@ -10,15 +10,12 @@
 {% block content %}
 
 <style>
-    /* Definimos el color Celeste Oscuro (Cyan Dark) */
     :root {
-        --cyan-dark: #00838F; /* Un tono elegante entre azul y verde */
+        --cyan-dark: #00838F;
         --cyan-hover: #006064;
     }
-
     .text-cyan { color: var(--cyan-dark) !important; }
     .bg-cyan { background-color: var(--cyan-dark) !important; color: white; }
-    
     .btn-cyan { 
         background-color: var(--cyan-dark); 
         color: white; 
@@ -29,8 +26,6 @@
         color: white; 
         transform: translateY(-2px);
     }
-
-    /* Utilidades */
     .ls-1 { letter-spacing: 1px; }
     .object-fit-cover { object-fit: cover; }
     .hover-up:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important; }
@@ -136,23 +131,67 @@
             </div>
 
             <div class="mb-5">
-                <h3 class="fw-bold mb-4">Actividades Disponibles</h3>
-                {% if actividades %}
-                    <div class="d-flex flex-column gap-3">
-                        {% for actividad in actividades %}
-                        <div class="card border-0 shadow-sm rounded-4 overflow-hidden hover-up transition-all">
-                            <div class="card-body p-4 d-flex align-items-center">
-                                <div class="flex-grow-1">
-                                    <h5 class="fw-bold mb-1">
-                                        {{ actividad.nombre }}
-                                        <span class="badge bg-info bg-opacity-10 text-info rounded-pill ms-2 small">
-                                            {{ actividad.get_tipo_display }}
-                                        </span>
-                                    </h5>
-                                    <p class="text-muted small mb-0">{{ actividad.descripcion|default:"Sin descripción" }}</p>
-                                    <div class="mt-2 text-muted small">
-                                        <i class="far fa-clock me-1"></i> {{ actividad.duracion_minutos }} min
+    <h3 class="fw-bold mb-4">Actividades Disponibles</h3>
+    {% if actividades %}
+        <div class="d-flex flex-column gap-3">
+            {% for actividad in actividades %}
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden hover-up transition-all mb-3">
+                <div class="card-body p-4 d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h5 class="fw-bold mb-1">
+                            {{ actividad.nombre }}
+                            <span class="badge bg-info bg-opacity-10 text-info rounded-pill ms-2 small">
+                                {{ actividad.get_tipo_display }}
+                            </span>
+                        </h5>
+                        <p class="text-muted small mb-0">{{ actividad.descripcion|default:"Sin descripción" }}</p>
+                        <div class="mt-2 text-muted small">
+                            <i class="far fa-clock me-1"></i> {{ actividad.duracion_minutos }} min
+                        </div>
+                    </div>
+                    
+                    <div class="text-end ps-3 border-start">
+                        <div class="fs-5 fw-bold text-cyan mb-1">S/ {{ actividad.costo }}</div>
+                        
+                        {% if user.is_authenticated %}
+                            <button type="button" 
+                                    class="btn btn-sm btn-outline-primary rounded-pill" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#modalActividad{{ actividad.id }}"
+                                    title="Agregar a itinerario">
+                                <i class="fas fa-plus"></i> Agregar
+                            </button>
+                        {% else %}
+                            <a href="{% url 'usuarios:login' %}" class="btn btn-sm btn-outline-secondary rounded-pill">
+                                <i class="fas fa-lock"></i>
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODAL CORREGIDO PARA CADA ACTIVIDAD -->
+            {% if user.is_authenticated %}
+            <div class="modal fade" id="modalActividad{{ actividad.id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content rounded-4 border-0 shadow">
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title fs-6 fw-bold">
+                                <i class="fas fa-plus-circle me-2"></i> Agregar "{{ actividad.nombre }}"
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        
+                        <!-- CORREGIDO: action y name del campo -->
+                        <form action="{% url 'itinerarios:agregar_actividad_manual' actividad.id %}" method="post">
+                            <div class="modal-body p-4">
+                                {% csrf_token %}
+                                
+                                <div class="text-center mb-3">
+                                    <div class="avatar bg-light text-primary rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                        <i class="fas fa-map-marked-alt fa-lg"></i>
                                     </div>
+                                    <p class="small text-muted">Elige el itinerario donde deseas guardar esta actividad:</p>
                                 </div>
                                 <div class="text-end ps-3 border-start">
                                     {% if actividad.costo > 0 %}
@@ -163,18 +202,54 @@
                                     <button class="btn btn-sm btn-outline-primary rounded-pill" data-bs-toggle="tooltip" title="Agregar a itinerario">
                                         <i class="fas fa-plus"></i>
                                     </button>
+                                </div> 
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Seleccionar Itinerario</label>
+                                    <!-- CORREGIDO: usar 'itinerario' como name -->
+                                    <select name="itinerario" class="form-select" required>
+                                        <option value="">-- Selecciona un itinerario --</option>
+                                        {% for it in user.itinerarios.all %}
+                                            {% if it.estado in 'borrador,confirmado' %}
+                                            <option value="{{ it.id }}">
+                                                {{ it.nombre }} ({{ it.fecha_inicio|date:"d/m/Y" }})
+                                            </option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <!-- Info de la actividad -->
+                                <div class="alert alert-light border">
+                                    <h6 class="mb-2"><i class="fas fa-info-circle text-primary"></i> Detalles</h6>
+                                    <ul class="list-unstyled mb-0 small">
+                                        <li><strong>Destino:</strong> {{ actividad.destino.nombre }}</li>
+                                        <li><strong>Costo:</strong> S/ {{ actividad.costo }}</li>
+                                        <li><strong>Duración:</strong> {{ actividad.duracion_minutos }} min</li>
+                                    </ul>
                                 </div>
                             </div>
-                        </div>
-                        {% endfor %}
+                            
+                            <div class="modal-footer border-0 pt-0">
+                                <button type="button" class="btn btn-link text-secondary text-decoration-none" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold">
+                                    Guardar Actividad
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                {% else %}
-                    <div class="alert alert-light border rounded-4 text-center py-4">
-                        <i class="fas fa-info-circle text-muted mb-2 fs-4"></i>
-                        <p class="text-muted mb-0">No hay actividades específicas registradas, pero la visita libre es increíble.</p>
-                    </div>
-                {% endif %}
+                </div>
             </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-light border rounded-4 text-center py-4">
+            <i class="fas fa-info-circle text-muted mb-2 fs-4"></i>
+            <p class="text-muted mb-0">No hay actividades específicas registradas, pero la visita libre es increíble.</p>
+        </div>
+    {% endif %}
+</div>
 
             {% if imagenes %}
             <div class="mb-5">
@@ -218,9 +293,12 @@
                     </div>
                     <div class="card-body p-4">
                         {% if user.is_authenticated %}
-                            <a href="{% url 'itinerarios:generar' %}" class="btn btn-warning w-100 rounded-pill fw-bold mb-3 py-2 shadow-sm">
+                            <button type="button" class="btn btn-warning w-100 rounded-pill fw-bold mb-3 py-2 shadow-sm"
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#agregarDestinoModal">
                                 <i class="fas fa-plus-circle me-2"></i> Agregar a mi Itinerario
-                            </a>
+                            </button>
+                            
                             <a href="{% url 'rutas:mapa_rutas' %}?destino={{ destino.id }}" class="btn btn-outline-primary w-100 rounded-pill fw-bold py-2">
                                 <i class="fas fa-route me-2"></i> Cómo llegar
                             </a>
@@ -265,6 +343,40 @@
     </div>
 </div>
 
+{% if user.is_authenticated and form_agregar %}
+<div class="modal fade" id="agregarDestinoModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus-circle"></i> Agregar: {{ destino.nombre }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'itinerarios:agregar_actividad_manual' actividades.first.id|default:0 %}"> 
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <div class="alert alert-info small">
+                        <i class="fas fa-info-circle"></i> 
+                        Se agregará la actividad principal de este destino.
+                    </div>
+                    <div class="mb-3">
+                        {{ form_agregar.itinerario.label_tag }}
+                        {{ form_agregar.itinerario }}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-check"></i> Agregar al Itinerario
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 {% if recomendaciones %}
 <div class="bg-light py-5 mt-5">
     <div class="container">
@@ -273,7 +385,6 @@
             {% for destino_rec, peso, porcentaje in recomendaciones %}
             <div class="col-md-4 col-lg-3">
                 <div class="card h-100 border-0 shadow-sm rounded-4 hover-up transition-all">
-                    
                     {% if destino_rec.imagen_principal %}
                     <img src="{{ destino_rec.imagen_principal }}" class="card-img-top rounded-top-4" style="height: 160px; object-fit: cover;">
                     {% else %}
@@ -293,7 +404,7 @@
                             </div>
                             <div class="progress" style="height: 6px;">
                                 <div class="progress-bar bg-cyan" role="progressbar" 
-                                     style="width: {{ porcentaje }}%"
+                                     style="width: {{ porcentaje }}%" 
                                      aria-valuenow="{{ porcentaje }}" aria-valuemin="0" aria-valuemax="100">
                                 </div>
                             </div>
@@ -330,7 +441,6 @@
                 attribution: '© OpenStreetMap'
             }).addTo(map);
             
-            // Icono Rojo para el destino
             var redIcon = new L.Icon({
                 iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
                 shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
@@ -348,7 +458,6 @@
             document.getElementById('map').innerHTML = '<div class="d-flex align-items-center justify-content-center h-100 bg-light text-muted small">Sin ubicación</div>';
         }
 
-        // Activar tooltips
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl)

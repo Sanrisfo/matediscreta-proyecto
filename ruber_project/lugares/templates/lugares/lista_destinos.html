@@ -145,12 +145,117 @@
                         {% endif%}
                     </div>
 
-                    <a href="{% url 'lugares:detalle_destino' destino.id %}" class="btn btn-outline-primary rounded-pill w-100 fw-bold">
-                        Ver Detalles
-                    </a>
+                    <!-- BOTONES DE ACCIÓN -->
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <a href="{% url 'lugares:detalle_destino' destino.id %}" class="btn btn-outline-primary rounded-pill w-100 fw-bold btn-sm">
+                                Ver Detalles
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            {% if user.is_authenticated %}
+                            <button type="button" class="btn btn-success rounded-pill w-100 fw-bold btn-sm"
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#agregarModal{{ destino.id }}">
+                                <i class="fas fa-plus"></i> Agregar
+                            </button>
+                            {% else %}
+                            <a href="{% url 'usuarios:login' %}" class="btn btn-secondary rounded-pill w-100 fw-bold btn-sm">
+                                <i class="fas fa-lock"></i> Iniciar
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
+        
+        <!-- MODAL PARA AGREGAR A ITINERARIO -->
+        {% if user.is_authenticated %}
+<div class="modal fade" id="agregarModal{{ destino.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus-circle"></i> Agregar: {{ destino.nombre }}
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            
+            <!-- CORREGIDO: Usar la primera actividad disponible o crear acción especial -->
+            {% with primera_actividad=destino.actividades.first %}
+                {% if primera_actividad %}
+                <form method="post" action="{% url 'itinerarios:agregar_actividad_manual' primera_actividad.id %}">
+                    <div class="modal-body">
+                        {% csrf_token %}
+                        
+                        <div class="alert alert-info small">
+                            <i class="fas fa-info-circle"></i> 
+                            Se agregará la actividad: <strong>{{ primera_actividad.nombre }}</strong>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Selecciona un Itinerario</label>
+                            <!-- CORREGIDO: name="itinerario" -->
+                            <select name="itinerario" class="form-select" required>
+                                <option value="">-- Selecciona --</option>
+                                {% for itinerario in user.itinerarios.all %}
+                                    {% if itinerario.estado in 'borrador,confirmado' %}
+                                    <option value="{{ itinerario.id }}">
+                                        {{ itinerario.nombre }} ({{ itinerario.fecha_inicio|date:"d/m/Y" }})
+                                    </option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">Solo se muestran itinerarios activos</small>
+                        </div>
+                        
+                        {% if user.itinerarios.count == 0 %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i> 
+                            No tienes itinerarios creados. 
+                            <a href="{% url 'itinerarios:generar' %}" class="alert-link">Crea uno aquí</a>.
+                        </div>
+                        {% endif %}
+                        
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="mb-2"><i class="fas fa-map-marker-alt text-success"></i> Información</h6>
+                                <ul class="list-unstyled mb-0 small">
+                                    <li><strong>Actividad:</strong> {{ primera_actividad.nombre }}</li>
+                                    <li><strong>Costo:</strong> S/ {{ primera_actividad.costo }}</li>
+                                    <li><strong>Duración:</strong> {{ primera_actividad.duracion_minutos }} min</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-success" {% if user.itinerarios.count == 0 %}disabled{% endif %}>
+                            <i class="fas fa-check"></i> Agregar al Itinerario
+                        </button>
+                    </div>
+                </form>
+                {% else %}
+                <!-- Si no hay actividades, mostrar mensaje -->
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Este destino no tiene actividades disponibles.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+                {% endif %}
+            {% endwith %}
+        </div>
+    </div>
+</div>
+{% endif %}
+        
         {% empty %}
         <div class="col-12 text-center py-5">
             <div class="mb-3 text-muted opacity-50">
@@ -167,7 +272,6 @@
 </div>
 
 <style>
-    /* Estilos específicos para esta página */
     .hover-up {
         transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
@@ -177,9 +281,6 @@
     }
     .ls-2 { letter-spacing: 2px; }
     .backdrop-blur { backdrop-filter: blur(5px); }
-    
-    /* Input groups más bonitos */
-    .input-group-text { color: var(--primary-color); }
 </style>
 
 {% endblock %}
