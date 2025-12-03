@@ -1,0 +1,83 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Editar Actividad - Ruber{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-md-6 mx-auto">
+            <div class="card shadow-lg">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0">
+                        <i class="fas fa-edit"></i> Editar Actividad
+                    </h4>
+                </div>
+                <div class="card-body">
+                    
+                    <div class="alert alert-info mb-4">
+                        <h5 class="alert-heading">
+                            <i class="fas fa-map-marker-alt"></i> {{ item.destino.nombre }}
+                        </h5>
+                        <p class="mb-0">Itinerario: <strong>{{ item.itinerario.nombre }}</strong></p>
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.dia.id_for_label }}" class="form-label">
+                                <i class="fas fa-calendar-day text-primary"></i> Día del Itinerario
+                            </label>
+                            {{ form.dia }}
+                            {% if form.dia.errors %}
+                                <div class="text-danger small">{{ form.dia.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.hora_inicio.id_for_label }}" class="form-label">
+                                <i class="fas fa-clock text-success"></i> Hora de Inicio
+                            </label>
+                            {{ form.hora_inicio }}
+                            {% if form.hora_inicio.errors %}
+                                <div class="text-danger small">{{ form.hora_inicio.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.hora_fin.id_for_label }}" class="form-label">
+                                <i class="fas fa-clock text-danger"></i> Hora de Fin
+                            </label>
+                            {{ form.hora_fin }}
+                            {% if form.hora_fin.errors %}
+                                <div class="text-danger small">{{ form.hora_fin.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                        {% endif %}
+                        
+                        <div class="alert alert-light">
+                            <i class="fas fa-info-circle"></i> 
+                            <small>Los cambios se reflejarán inmediatamente en los gráficos del dashboard.</small>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'itinerarios:detalle' item.itinerario.id %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-save"></i> Guardar Cambios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

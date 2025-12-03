@@ -124,7 +124,7 @@ class Command(BaseCommand):
                 self.stdout.write(f'  ✓ {destino.nombre}')
         
         # ===== CREAR ACTIVIDADES =====
-        self.stdout.write('🎯 Creando actividades...')
+        self.stdout.write(' Creando actividades...')
         
         playa_costa_verde = Destino.objects.get(nombre='Playa Costa Verde')
         museo_larco = Destino.objects.get(nombre='Museo Larco')
