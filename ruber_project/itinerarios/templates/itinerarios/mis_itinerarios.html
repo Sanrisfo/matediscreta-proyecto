@@ -1,0 +1,103 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Mis Itinerarios | Ruber{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h1 class="fw-bold text-dark mb-1">Mis Viajes</h1>
+            <p class="text-muted mb-0">Gestiona tus planes y revive tus aventuras.</p>
+        </div>
+        <a href="{% url 'itinerarios:generar' %}" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm hover-up">
+            <i class="fas fa-plus-circle me-2"></i> Nuevo Itinerario
+        </a>
+    </div>
+
+    {% if itinerarios %}
+    <div class="row g-4">
+        {% for itinerario in itinerarios %}
+        <div class="col-md-6 col-lg-4">
+            <a href="{% url 'itinerarios:detalle' itinerario.id %}" class="text-decoration-none">
+                <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden hover-up transition-all">
+                    
+                    <div class="p-4 text-white position-relative" style="background: linear-gradient(135deg, #00838F 0%, #006064 100%);">
+                        <h5 class="fw-bold mb-1 text-truncate">{{ itinerario.nombre }}</h5>
+                        <p class="small mb-0 opacity-75">
+                            <i class="fas fa-calendar-alt me-1"></i> {{ itinerario.fecha_inicio|date:"d M" }} - {{ itinerario.fecha_fin|date:"d M Y" }}
+                        </p>
+                        
+                        <span class="position-absolute top-0 end-0 m-3 badge bg-white text-dark bg-opacity-75 rounded-pill shadow-sm">
+                            {% if itinerario.estado == 'borrador' %}
+                                <i class="fas fa-pencil-alt text-warning me-1"></i> Borrador
+                            {% else %}
+                                <i class="fas fa-check-circle text-success me-1"></i> Listo
+                            {% endif %}
+                        </span>
+                    </div>
+
+                    <div class="card-body p-4">
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <div class="p-2 bg-light rounded-3 text-center">
+                                    <small class="text-muted d-block text-uppercase" style="font-size: 0.7rem;">Costo</small>
+                                    <span class="fw-bold text-dark">S/ {{ itinerario.costo_total|floatformat:0 }}</span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="p-2 bg-light rounded-3 text-center">
+                                    <small class="text-muted d-block text-uppercase" style="font-size: 0.7rem;">Actividades</small>
+                                    <span class="fw-bold text-dark">{{ itinerario.num_actividades|default:"0" }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <p class="text-muted small mb-0">
+                            <i class="fas fa-clock me-1 text-info"></i> Creado el {{ itinerario.fecha_creacion|date:"d/m/Y" }}
+                        </p>
+                    </div>
+                    
+                    <div class="card-footer bg-white border-top-0 p-4 pt-0">
+                        <div class="d-grid">
+                            <span class="btn btn-outline-primary rounded-pill btn-sm fw-bold">
+                                Ver Detalles <i class="fas fa-arrow-right ms-2"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="text-center py-5">
+        <div class="mb-4 text-muted opacity-25">
+            <i class="fas fa-map-marked-alt fa-5x"></i>
+        </div>
+        <h3 class="fw-bold text-muted">No tienes itinerarios creados</h3>
+        <p class="text-muted mb-4">¡Es hora de planificar tu primera aventura en Perú!</p>
+        <a href="{% url 'itinerarios:generar' %}" class="btn btn-primary rounded-pill px-5 py-3 fw-bold shadow hover-up">
+            Comenzar Ahora
+        </a>
+    </div>
+    {% endif %}
+
+</div>
+
+<style>
+    /* Efecto de elevación */
+    .hover-up {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .hover-up:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
+    }
+    .transition-all {
+        transition: all 0.3s ease;
+    }
+</style>
+{% endblock %}

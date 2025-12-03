@@ -1,102 +1,258 @@
 {% extends 'core/base.html' %}
+{% load static %}
 
-{% block title %}{{ itinerario.nombre }} - Ruber{% endblock %}
+{% block title %}Detalle Itinerario | Ruber{% endblock %}
 
 {% block content %}
 <div class="container py-5">
-    <!-- Header del itinerario -->
-    <div class="card shadow mb-4">
-        <div class="card-header bg-primary text-white">
-            <div class="row align-items-center">
-                <div class="col">
-                    <h3 class="mb-0"><i class="fas fa-route"></i> {{ itinerario.nombre }}</h3>
-                </div>
-                <div class="col-auto">
-                    <span class="badge bg-light text-dark fs-6">{{ itinerario.get_estado_display }}</span>
-                </div>
-            </div>
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-primary">{{ itinerario.nombre }}</h2>
+            <p class="text-muted mb-0">
+                <i class="fas fa-calendar-alt me-2"></i>{{ itinerario.fecha_inicio }} al {{ itinerario.fecha_fin }}
+            </p>
         </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <p><strong><i class="fas fa-calendar"></i> Fecha:</strong> {{ itinerario.fecha_inicio }} - {{ itinerario.fecha_fin }}</p>
-                    <p><strong><i class="fas fa-clock"></i> Duración:</strong> {{ itinerario.tiempo_total_minutos }} minutos</p>
-                </div>
-                <div class="col-md-6">
-                    <p><strong><i class="fas fa-dollar-sign"></i> Costo Total:</strong> S/ {{ itinerario.costo_total }}</p>
-                    <p><strong><i class="fas fa-map-marked"></i> Distancia Total:</strong> {{ itinerario.distancia_total_km }} km</p>
-                </div>
-            </div>
-            {% if itinerario.descripcion %}
-            <p class="mb-0"><strong>Descripción:</strong> {{ itinerario.descripcion }}</p>
-            {% endif %}
+        <div class="d-flex gap-2">
+            <a href="{% url 'itinerarios:regenerar' itinerario.id %}" class="btn btn-warning text-dark fw-bold shadow-sm rounded-pill">
+                <i class="fas fa-random me-2"></i> Regenerar (3 Aleatorias)
+            </a>
+            <a href="{% url 'itinerarios:mis_itinerarios' %}" class="btn btn-outline-secondary rounded-pill">
+                Volver a mis viajes
+            </a>
         </div>
     </div>
-    
-    <!-- Timeline de destinos -->
-    <div class="card shadow">
-        <div class="card-header">
-            <h4 class="mb-0">Plan de Viaje</h4>
-        </div>
-        <div class="card-body">
-            {% if items %}
-            <div class="timeline">
-                {% regroup items by dia as items_por_dia %}
-                {% for dia_group in items_por_dia %}
-                <h5 class="text-primary mt-4 mb-3">
-                    <i class="fas fa-calendar-day"></i> Día {{ dia_group.grouper }}
-                </h5>
-                
-                {% for item in dia_group.list %}
-                <div class="card mb-3 border-start border-primary border-4">
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h5 class="card-title">
-                                    <span class="badge bg-primary me-2">{{ item.orden }}</span>
-                                    {{ item.destino.nombre }}
-                                </h5>
-                                <p class="card-text">{{ item.destino.descripcion|truncatewords:30 }}</p>
-                                {% if item.notas %}
-                                <p class="text-muted"><i class="fas fa-sticky-note"></i> {{ item.notas }}</p>
-                                {% endif %}
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <p class="mb-1"><strong>Horario:</strong></p>
-                                <p class="text-primary">{{ item.hora_inicio }} - {{ item.hora_fin }}</p>
-                                <p class="mb-1"><strong>Costo:</strong> S/ {{ item.destino.costo_entrada }}</p>
-                                <a href="{% url 'lugares:detalle_destino' item.destino.id %}" class="btn btn-sm btn-outline-primary">
-                                    Ver Detalles
-                                </a>
-                            </div>
-                        </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+                <div class="card-body d-flex align-items-center p-4">
+                    <div class="bg-success bg-opacity-10 p-3 rounded-circle me-3 text-success">
+                        <i class="fas fa-wallet fa-2x"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted text-uppercase small mb-1 ls-1">Presupuesto Estimado</h6>
+                        <h3 class="fw-bold mb-0 text-dark">S/ {{ itinerario.costo_total|floatformat:0 }}</h3>
                     </div>
                 </div>
-                {% endfor %}
-                {% endfor %}
             </div>
-            {% else %}
-            <div class="alert alert-warning">
-                <i class="fas fa-exclamation-triangle"></i> Este itinerario aún no tiene destinos asignados.
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+                <div class="card-body d-flex align-items-center p-4">
+                    <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-3 text-primary">
+                        <i class="fas fa-map-marked-alt fa-2x"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted text-uppercase small mb-1 ls-1">Actividades</h6>
+                        <h3 class="fw-bold mb-0 text-dark">{{ total_actividades }}</h3>
+                    </div>
+                </div>
             </div>
-            {% endif %}
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+                <div class="card-body d-flex align-items-center p-4">
+                    <div class="bg-info bg-opacity-10 p-3 rounded-circle me-3 text-info">
+                        <i class="fas fa-clock fa-2x"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted text-uppercase small mb-1 ls-1">Tiempo Total</h6>
+                        <h3 class="fw-bold mb-0 text-dark">{{ itinerario.tiempo_total_minutos }} <span class="fs-6 text-muted">min</span></h3>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-    
-    <!-- Acciones -->
-    <div class="text-center mt-4">
-        <a href="{% url 'itinerarios:mis_itinerarios' %}" class="btn btn-secondary">
-            <i class="fas fa-arrow-left"></i> Volver a mis itinerarios
-        </a>
-        {% if not itinerario.ticket %}
-        <a href="{% url 'tickets:generar' itinerario.id %}" class="btn btn-success">
-            <i class="fas fa-ticket-alt"></i> Generar Ticket
-        </a>
-        {% else %}
-        <a href="{% url 'tickets:detalle' itinerario.ticket.id %}" class="btn btn-info">
-            <i class="fas fa-qrcode"></i> Ver Ticket
-        </a>
-        {% endif %}
+
+    <div class="row g-4">
+        
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 py-4 px-4">
+                    <h5 class="fw-bold mb-0 text-dark">
+                        <i class="fas fa-stream me-2 text-primary"></i>Cronograma de Actividades
+                    </h5>
+                </div>
+                <div class="card-body px-4">
+                    {% if items %}
+                        <div class="timeline position-relative">
+                            {% for item in items %}
+                            <div class="d-flex mb-4 position-relative timeline-item">
+                                <div class="me-4 text-center d-flex flex-column align-items-center" style="min-width: 80px;">
+                                    <span class="badge bg-light text-dark border rounded-pill mb-1 px-3">Día {{ item.dia }}</span>
+                                    <div class="fw-bold text-primary">{{ item.hora_inicio|time:"H:i" }}</div>
+                                    <div class="small text-muted">{{ item.hora_fin|time:"H:i" }}</div>
+                                    {% if not forloop.last %}
+                                    <div class="position-absolute bg-light" style="width: 2px; height: 100%; top: 40px; left: 40px; z-index: 0;"></div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="card border-0 bg-light rounded-4 w-100 p-3 hover-up transition-all" style="z-index: 1;">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="fw-bold mb-1 text-dark">{{ item.destino.nombre }}</h6>
+                                            <p class="text-primary small mb-2 fw-medium">
+                                                <i class="fas fa-check-circle me-1"></i> {{ item.notas }}
+                                            </p>
+                                        </div>
+                                        <span class="badge bg-white text-success shadow-sm border">
+                                            S/ {{ item.destino.costo_entrada|floatformat:0 }}
+                                        </span>
+                                    </div>
+                                    <div class="d-flex gap-3 small text-muted mt-2 border-top pt-2">
+                                        <span><i class="fas fa-map-marker-alt me-1"></i> {{ item.destino.categoria.nombre }}</span>
+                                        <span><i class="fas fa-stopwatch me-1"></i> 90 min</span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <div class="mb-3 opacity-25">
+                                <i class="fas fa-clipboard-list fa-4x text-muted"></i>
+                            </div>
+                            <h5 class="text-muted">Tu itinerario está vacío</h5>
+                            <p class="small text-muted mb-4">Genera nuevas actividades para ver tu plan.</p>
+                            <a href="{% url 'itinerarios:regenerar' itinerario.id %}" class="btn btn-primary rounded-pill">
+                                Generar Actividades
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-header bg-white border-0 py-3 px-4">
+                    <h6 class="fw-bold mb-0">Distribución de Costos por Día</h6>
+                </div>
+                <div class="card-body px-4 pb-4">
+                    <div style="height: 250px;">
+                        <canvas id="chartCostos"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-white border-0 py-3 px-4">
+                    <h6 class="fw-bold mb-0">Tiempo de Actividad (min)</h6>
+                </div>
+                <div class="card-body px-4 pb-4">
+                    <div style="height: 200px;">
+                        <canvas id="chartTiempo"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
+<style>
+    .ls-1 { letter-spacing: 1px; }
+    .hover-up:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.05) !important; }
+    .transition-all { transition: all 0.3s ease; }
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        
+        // 1. Obtener y parsear los datos de Django
+        const rawData = '{{ datos_grafico|safe }}';
+        console.log("Datos recibidos:", rawData); // Para depuración
+        
+        let datos = null;
+        try {
+            datos = JSON.parse(rawData);
+        } catch (e) {
+            console.error("Error al leer JSON:", e);
+            return;
+        }
+
+        // Validar que existan datos para graficar
+        if (!datos || !datos.dias || datos.dias.length === 0) {
+            console.warn("No hay datos suficientes para los gráficos");
+            return;
+        }
+
+        // Configuración común de colores
+        const primaryColor = '#00838F'; // Tu color Cian
+        const secondaryColor = '#FFB703'; // Tu color Amarillo
+
+        // 2. Gráfico de Costos (Barras)
+        const ctxCostos = document.getElementById('chartCostos');
+        if (ctxCostos) {
+            new Chart(ctxCostos, {
+                type: 'bar',
+                data: {
+                    labels: datos.dias,
+                    datasets: [{
+                        label: 'Costo (S/)',
+                        data: datos.costo,
+                        backgroundColor: primaryColor,
+                        borderRadius: 5,
+                        barThickness: 30
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true,
+                            grid: { display: true, borderDash: [5, 5] }
+                        },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        // 3. Gráfico de Tiempo (Línea)
+        const ctxTiempo = document.getElementById('chartTiempo');
+        if (ctxTiempo) {
+            new Chart(ctxTiempo, {
+                type: 'line',
+                data: {
+                    labels: datos.dias,
+                    datasets: [{
+                        label: 'Minutos',
+                        data: datos.tiempo,
+                        borderColor: secondaryColor,
+                        backgroundColor: 'rgba(255, 183, 3, 0.1)',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: secondaryColor,
+                        pointRadius: 5,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { display: false, beginAtZero: true },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+    });
+</script>
 {% endblock %}
